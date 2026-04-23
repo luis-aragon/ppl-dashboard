@@ -1,7 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { useFilterOptions } from '@/hooks/use-dashboard'
 import type { Filters } from '@/hooks/use-filters'
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 interface Props {
   filters: Filters
@@ -11,6 +14,20 @@ interface Props {
 export function FilterBar({ filters, setFilters }: Props) {
   const { data: options } = useFilterOptions()
 
+  // Local state so the input feels responsive while typing
+  const [localFrom, setLocalFrom] = useState(filters.dateFrom)
+  const [localTo,   setLocalTo]   = useState(filters.dateTo)
+
+  function commitFrom(val: string) {
+    setLocalFrom(val)
+    if (DATE_RE.test(val)) setFilters({ dateFrom: val })
+  }
+
+  function commitTo(val: string) {
+    setLocalTo(val)
+    if (DATE_RE.test(val)) setFilters({ dateTo: val })
+  }
+
   return (
     <div className="flex flex-wrap gap-3 items-end rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
       {/* Date range */}
@@ -18,8 +35,9 @@ export function FilterBar({ filters, setFilters }: Props) {
         <label className="text-xs font-medium text-zinc-500">From</label>
         <input
           type="date"
-          value={filters.dateFrom}
-          onChange={(e) => setFilters({ dateFrom: e.target.value })}
+          value={localFrom}
+          onChange={(e) => setLocalFrom(e.target.value)}
+          onBlur={(e)   => commitFrom(e.target.value)}
           className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
         />
       </div>
@@ -27,8 +45,9 @@ export function FilterBar({ filters, setFilters }: Props) {
         <label className="text-xs font-medium text-zinc-500">To</label>
         <input
           type="date"
-          value={filters.dateTo}
-          onChange={(e) => setFilters({ dateTo: e.target.value })}
+          value={localTo}
+          onChange={(e) => setLocalTo(e.target.value)}
+          onBlur={(e)   => commitTo(e.target.value)}
           className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
         />
       </div>
