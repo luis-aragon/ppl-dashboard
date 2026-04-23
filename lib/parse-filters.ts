@@ -5,6 +5,7 @@ export interface FilterParams {
   dateTo: string
   suppliers: string[] | null
   buyers: string[] | null
+  verticals: string[] | null
   granularity: string
   sortBy: string
   sortDir: string
@@ -20,12 +21,14 @@ export function parseFilters(req: NextRequest): FilterParams {
 
   const suppliersRaw = searchParams.get('suppliers')
   const buyersRaw = searchParams.get('buyers')
+  const verticalsRaw = searchParams.get('verticals')
 
   return {
     dateFrom,
     dateTo,
     suppliers: suppliersRaw ? suppliersRaw.split(',').filter(Boolean) : null,
     buyers: buyersRaw ? buyersRaw.split(',').filter(Boolean) : null,
+    verticals: verticalsRaw ? verticalsRaw.split(',').filter(Boolean) : null,
     granularity: searchParams.get('granularity') ?? 'month',
     sortBy: searchParams.get('sortBy') ?? 'total_leads',
     sortDir: searchParams.get('sortDir') ?? 'desc',

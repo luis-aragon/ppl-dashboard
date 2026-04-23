@@ -10,6 +10,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<Su
     p_date_to:   f.dateTo,
     p_suppliers: f.suppliers,
     p_buyers:    f.buyers,
+    p_verticals: f.verticals,
     p_sort_by:   f.sortBy,
     p_sort_dir:  f.sortDir,
     p_page:      f.page,

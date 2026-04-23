@@ -9,6 +9,7 @@ export interface DashboardFilters {
   dateTo: string         // ISO date string, e.g. "2024-12-31"
   suppliers?: string[]   // supplier_id array, empty = all
   buyers?: string[]      // buyer_id array, empty = all
+  verticals?: string[]   // vertical array (windows, roofing), empty = all
   granularity?: 'day' | 'week' | 'month'
 }
 
@@ -91,6 +92,7 @@ export type GeoData = GeoRow[]
 export interface FilterOptions {
   suppliers: { id: string; name: string }[]
   buyers: { id: string; name: string }[]
+  verticals: string[]
   date_range: { min: string; max: string }
 }
 

@@ -10,6 +10,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<Fi
     p_date_to:   f.dateTo,
     p_suppliers: f.suppliers,
     p_buyers:    f.buyers,
+    p_verticals: f.verticals,
   })
 
   if (error) return NextResponse.json({ data: null, error: error.message }, { status: 500 })

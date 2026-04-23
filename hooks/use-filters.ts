@@ -15,6 +15,7 @@ const filterParsers = {
   dateTo:      parseAsString.withDefault(TODAY),
   suppliers:   parseAsArrayOf(parseAsString).withDefault([]),
   buyers:      parseAsArrayOf(parseAsString).withDefault([]),
+  verticals:   parseAsArrayOf(parseAsString).withDefault([]),
   granularity: parseAsStringEnum(['day', 'week', 'month'] as const).withDefault('month'),
 }
 

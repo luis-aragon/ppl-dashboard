@@ -89,6 +89,27 @@ export function FilterBar({ filters, setFilters }: Props) {
         </select>
       </div>
 
+      {/* Verticals multi-select */}
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-medium text-zinc-500">
+          Vertical{filters.verticals.length > 0 && ` (${filters.verticals.length})`}
+        </label>
+        <select
+          multiple
+          size={1}
+          value={filters.verticals}
+          onChange={(e) => {
+            const selected = Array.from(e.target.selectedOptions).map((o) => o.value)
+            setFilters({ verticals: selected })
+          }}
+          className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+        >
+          {(options?.verticals ?? []).map((v) => (
+            <option key={v} value={v}>{v}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Granularity */}
       <div className="flex flex-col gap-1">
         <label className="text-xs font-medium text-zinc-500">Granularity</label>
@@ -110,9 +131,9 @@ export function FilterBar({ filters, setFilters }: Props) {
       </div>
 
       {/* Reset */}
-      {(filters.suppliers.length > 0 || filters.buyers.length > 0) && (
+      {(filters.suppliers.length > 0 || filters.buyers.length > 0 || filters.verticals.length > 0) && (
         <button
-          onClick={() => setFilters({ suppliers: [], buyers: [] })}
+          onClick={() => setFilters({ suppliers: [], buyers: [], verticals: [] })}
           className="ml-auto h-8 rounded-md px-3 text-sm text-zinc-500 hover:bg-zinc-100"
         >
           Clear filters
