@@ -74,15 +74,11 @@ export function FilterBar({ filters, setFilters }: Props) {
           Suppliers{filters.suppliers.length > 0 && ` (${filters.suppliers.length})`}
         </label>
         <select
-          multiple
-          size={1}
-          value={filters.suppliers}
-          onChange={(e) => {
-            const selected = Array.from(e.target.selectedOptions).map((o) => o.value)
-            setFilters({ suppliers: selected })
-          }}
+          value={filters.suppliers[0] ?? ''}
+          onChange={(e) => setFilters({ suppliers: e.target.value ? [e.target.value] : [] })}
           className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
         >
+          <option value="">All suppliers</option>
           {(options?.suppliers ?? []).map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
@@ -95,15 +91,11 @@ export function FilterBar({ filters, setFilters }: Props) {
           Vertical{filters.verticals.length > 0 && ` (${filters.verticals.length})`}
         </label>
         <select
-          multiple
-          size={1}
-          value={filters.verticals}
-          onChange={(e) => {
-            const selected = Array.from(e.target.selectedOptions).map((o) => o.value)
-            setFilters({ verticals: selected })
-          }}
+          value={filters.verticals[0] ?? ''}
+          onChange={(e) => setFilters({ verticals: e.target.value ? [e.target.value] : [] })}
           className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
         >
+          <option value="">All verticals</option>
           {(options?.verticals ?? []).map((v) => (
             <option key={v} value={v}>{v}</option>
           ))}
