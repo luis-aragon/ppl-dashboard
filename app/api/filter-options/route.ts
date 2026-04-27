@@ -21,11 +21,7 @@ export async function GET(): Promise<NextResponse<ApiResponse<FilterOptions>>> {
       .select('event_day')
       .order('event_day', { ascending: true })
       .limit(1),
-    supabase
-      .from('vw_internal_lead_report')
-      .select('vertical')
-      .not('vertical', 'is', null)
-      .order('vertical'),
+    supabase.rpc('fn_get_distinct_verticals'),
   ])
 
   if (suppliersRes.error) return NextResponse.json({ data: null, error: suppliersRes.error.message }, { status: 500 })
@@ -33,7 +29,7 @@ export async function GET(): Promise<NextResponse<ApiResponse<FilterOptions>>> {
 
   const suppliers = (suppliersRes.data ?? []).map((r) => ({ id: r.id as string, name: r.name as string }))
   const buyers    = (buyersRes.data ?? []).map((r) => ({ id: r.id as string, name: r.name as string }))
-  const verticals = Array.from(new Set((verticalsRes.data ?? []).map((r) => r.vertical as string).filter(Boolean)))
+  const verticals = Array.from(new Set<string>((verticalsRes.data ?? []).map((r: any) => r.vertical as string).filter(Boolean)))
 
   const minDate = dateRes.data?.[0]?.event_day ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const maxDate = new Date().toISOString().split('T')[0]
