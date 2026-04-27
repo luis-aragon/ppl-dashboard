@@ -2,10 +2,9 @@
 
 import type { FinancialData } from '@/types/api'
 
-function fmt(n: number | null, currency = false) {
-  const v = n ?? 0
-  if (currency) return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v)
-  return v.toLocaleString('en-US', { maximumFractionDigits: 2 })
+function fmt(n: number, currency = false) {
+  if (currency) return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
+  return n.toLocaleString('en-US', { maximumFractionDigits: 2 })
 }
 
 function Card({ label, value, sub }: { label: string; value: string; sub?: string }) {
@@ -31,10 +30,10 @@ export function FinancialScorecards({ data, isLoading }: Props) {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       <Card label="Revenue"       value={fmt(data.total_revenue, true)} />
       <Card label="Cost"          value={fmt(data.total_cost, true)} />
-      <Card label="Gross Profit"  value={fmt(data.gross_profit, true)} sub={`${(data.profit_rate ?? 0).toFixed(1)}% margin`} />
+      <Card label="Gross Profit"  value={fmt(data.gross_profit, true)} sub={`${data.profit_rate.toFixed(1)}% margin`} />
       <Card label="CPA"           value={fmt(data.cpa, true)} sub="per accepted lead" />
       <Card label="Avg Rev / Lead" value={fmt(data.avg_revenue_per_lead, true)} />
-      <Card label="Profit Rate"   value={`${(data.profit_rate ?? 0).toFixed(1)}%`} />
+      <Card label="Profit Rate"   value={`${data.profit_rate.toFixed(1)}%`} />
     </div>
   )
 }
