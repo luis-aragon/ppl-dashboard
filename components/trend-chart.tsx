@@ -31,7 +31,7 @@ export function TrendChart({ data, isLoading }: Props) {
           <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" />
           <XAxis dataKey="period" tick={{ fontSize: 11 }} />
           <YAxis yAxisId="left"  tick={{ fontSize: 11 }} />
-          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${((v ?? 0) / 1000).toFixed(0)}k`} />
           <Tooltip formatter={(value, name) => {
             const n = typeof value === 'number' ? value : 0
             if (name === 'revenue') return [`$${n.toLocaleString()}`, 'Revenue']

@@ -26,6 +26,7 @@ export async function GET(): Promise<NextResponse<ApiResponse<FilterOptions>>> {
 
   if (suppliersRes.error) return NextResponse.json({ data: null, error: suppliersRes.error.message }, { status: 500 })
   if (buyersRes.error)    return NextResponse.json({ data: null, error: buyersRes.error.message },    { status: 500 })
+  if (verticalsRes.error) return NextResponse.json({ data: null, error: verticalsRes.error.message }, { status: 500 })
 
   const suppliers = (suppliersRes.data ?? []).map((r) => ({ id: r.id as string, name: r.name as string }))
   const buyers    = (buyersRes.data ?? []).map((r) => ({ id: r.id as string, name: r.name as string }))

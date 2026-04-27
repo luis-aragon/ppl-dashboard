@@ -7,17 +7,17 @@ import type { SupplierRow } from '@/types/api'
 
 const COLS: { key: keyof SupplierRow; label: string; fmt?: (v: number) => string }[] = [
   { key: 'supplier_name',  label: 'Supplier' },
-  { key: 'total_leads',    label: 'Leads',     fmt: (v) => v.toLocaleString() },
-  { key: 'accepted',       label: 'Accepted',  fmt: (v) => v.toLocaleString() },
-  { key: 'accepted_pct',   label: 'Acc%',      fmt: (v) => `${v.toFixed(1)}%` },
-  { key: 'rejected',       label: 'Rejected',  fmt: (v) => v.toLocaleString() },
-  { key: 'duplicate',      label: 'Dupes',     fmt: (v) => v.toLocaleString() },
-  { key: 'sold',           label: 'Sold',      fmt: (v) => v.toLocaleString() },
-  { key: 'revenue',        label: 'Revenue',   fmt: (v) => `$${v.toLocaleString()}` },
-  { key: 'cost',           label: 'Cost',      fmt: (v) => `$${v.toLocaleString()}` },
-  { key: 'profit',         label: 'Profit',    fmt: (v) => `$${v.toLocaleString()}` },
-  { key: 'profit_rate',    label: 'Margin',    fmt: (v) => `${v.toFixed(1)}%` },
-  { key: 'cpa',            label: 'CPA',       fmt: (v) => `$${v.toFixed(2)}` },
+  { key: 'total_leads',    label: 'Leads',     fmt: (v) => (v ?? 0).toLocaleString() },
+  { key: 'accepted',       label: 'Accepted',  fmt: (v) => (v ?? 0).toLocaleString() },
+  { key: 'accepted_pct',   label: 'Acc%',      fmt: (v) => `${(v ?? 0).toFixed(1)}%` },
+  { key: 'rejected',       label: 'Rejected',  fmt: (v) => (v ?? 0).toLocaleString() },
+  { key: 'duplicate',      label: 'Dupes',     fmt: (v) => (v ?? 0).toLocaleString() },
+  { key: 'sold',           label: 'Sold',      fmt: (v) => (v ?? 0).toLocaleString() },
+  { key: 'revenue',        label: 'Revenue',   fmt: (v) => `$${(v ?? 0).toLocaleString()}` },
+  { key: 'cost',           label: 'Cost',      fmt: (v) => `$${(v ?? 0).toLocaleString()}` },
+  { key: 'profit',         label: 'Profit',    fmt: (v) => `$${(v ?? 0).toLocaleString()}` },
+  { key: 'profit_rate',    label: 'Margin',    fmt: (v) => `${(v ?? 0).toFixed(1)}%` },
+  { key: 'cpa',            label: 'CPA',       fmt: (v) => `$${(v ?? 0).toFixed(2)}` },
 ]
 
 interface Props { filters: Filters }
@@ -68,7 +68,8 @@ export function SupplierTable({ filters }: Props) {
               <tr key={row.supplier_id} className="border-b border-zinc-50 hover:bg-zinc-50/50">
                 {COLS.map((col) => {
                   const raw = row[col.key]
-                  const val = col.fmt && typeof raw === 'number' ? col.fmt(raw) : String(raw ?? '-')
+                  const num = typeof raw === 'number' ? raw : (typeof raw === 'string' && raw !== '' ? parseFloat(raw) : null)
+                  const val = col.fmt && num !== null && !isNaN(num) ? col.fmt(num) : String(raw ?? '-')
                   return <td key={col.key} className="px-3 py-2 text-zinc-700 whitespace-nowrap">{val}</td>
                 })}
               </tr>

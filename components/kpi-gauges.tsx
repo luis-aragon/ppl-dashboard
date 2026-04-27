@@ -2,15 +2,15 @@
 
 import type { KpiData } from '@/types/api'
 
-function Gauge({ label, value, pct, color }: { label: string; value: number; pct: number; color: string }) {
+function Gauge({ label, value, pct, color }: { label: string; value: number | null; pct: number | null; color: string }) {
   return (
     <div className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
       <span className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{label}</span>
-      <span className="text-2xl font-bold text-zinc-900">{value.toLocaleString()}</span>
+      <span className="text-2xl font-bold text-zinc-900">{(value ?? 0).toLocaleString()}</span>
       <div className="h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(pct ?? 0, 100)}%` }} />
       </div>
-      <span className="text-xs text-zinc-400">{pct.toFixed(1)}%</span>
+      <span className="text-xs text-zinc-400">{(pct ?? 0).toFixed(1)}%</span>
     </div>
   )
 }
@@ -28,7 +28,7 @@ export function KpiGauges({ data, isLoading }: Props) {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       <div className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
         <span className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Total Leads</span>
-        <span className="text-2xl font-bold text-zinc-900">{data.total_leads.toLocaleString()}</span>
+        <span className="text-2xl font-bold text-zinc-900">{(data.total_leads ?? 0).toLocaleString()}</span>
         <div className="h-1.5 w-full rounded-full bg-zinc-100" />
         <span className="text-xs text-zinc-400">100%</span>
       </div>

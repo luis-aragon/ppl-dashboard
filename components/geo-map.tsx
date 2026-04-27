@@ -5,7 +5,6 @@ import type { GeoData } from '@/types/api'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json'
 
-// FIPS → state abbreviation lookup (only what we need)
 const FIPS: Record<string, string> = {
   '01':'AL','02':'AK','04':'AZ','05':'AR','06':'CA','08':'CO','09':'CT','10':'DE','11':'DC',
   '12':'FL','13':'GA','15':'HI','16':'ID','17':'IL','18':'IN','19':'IA','20':'KS','21':'KY',
@@ -21,12 +20,12 @@ export function GeoMap({ data, isLoading }: Props) {
   if (isLoading) return <div className="h-72 rounded-xl bg-zinc-100 animate-pulse" />
 
   const byState = Object.fromEntries((data ?? []).map((r) => [r.state, r]))
-  const maxLeads = Math.max(1, ...(data ?? []).map((r) => r.total_leads))
+  const maxLeads = Math.max(1, ...(data ?? []).map((r) => r.total_leads ?? 0))
 
   function fill(stateAbbr: string) {
     const row = byState[stateAbbr]
     if (!row) return '#f4f4f5'
-    const intensity = row.total_leads / maxLeads
+    const intensity = (row.total_leads ?? 0) / maxLeads
     const lightness = Math.round(90 - intensity * 55)
     return `hsl(221, 83%, ${lightness}%)`
   }
@@ -34,28 +33,32 @@ export function GeoMap({ data, isLoading }: Props) {
   return (
     <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
       <h2 className="mb-2 text-sm font-semibold text-zinc-700">Geographic Distribution</h2>
-      <ComposableMap projection="geoAlbersUsa" className="w-full max-h-64">
-        <Geographies geography={GEO_URL}>
-          {({ geographies }) =>
-            geographies.map((geo) => {
-              const abbr = FIPS[geo.id as string] ?? ''
-              const row  = byState[abbr]
-              return (
-                <Geography
-                  key={geo.rsmKey}
-                  geography={geo}
-                  fill={fill(abbr)}
-                  stroke="#ffffff"
-                  strokeWidth={0.5}
-                  style={{ default: { outline: 'none' }, hover: { outline: 'none', fill: '#fbbf24' }, pressed: { outline: 'none' } }}
-                  data-tooltip-id="geo-tip"
-                  data-tooltip-content={row ? `${abbr}: ${row.total_leads} leads, $${row.revenue.toLocaleString()}` : abbr}
-                />
-              )
-            })
-          }
-        </Geographies>
-      </ComposableMap>
+      {(!data || data.length === 0) ? (
+        <div className="flex h-64 items-center justify-center text-sm text-zinc-400">No geo data</div>
+      ) : (
+        <ComposableMap projection="geoAlbersUsa" className="w-full max-h-64">
+          <Geographies geography={GEO_URL}>
+            {({ geographies }) =>
+              geographies.map((geo) => {
+                const abbr = FIPS[geo.id as string] ?? ''
+                const row  = byState[abbr]
+                return (
+                  <Geography
+                    key={geo.rsmKey}
+                    geography={geo}
+                    fill={fill(abbr)}
+                    stroke="#ffffff"
+                    strokeWidth={0.5}
+                    style={{ default: { outline: 'none' }, hover: { outline: 'none', fill: '#fbbf24' }, pressed: { outline: 'none' } }}
+                    data-tooltip-id="geo-tip"
+                    data-tooltip-content={row ? `${abbr}: ${row.total_leads ?? 0} leads, $${(row.revenue ?? 0).toLocaleString()}` : abbr}
+                  />
+                )
+              })
+            }
+          </Geographies>
+        </ComposableMap>
+      )}
     </div>
   )
 }
