@@ -16,11 +16,7 @@ export async function GET(): Promise<NextResponse<ApiResponse<FilterOptions>>> {
       .eq('partner_type', 'buyer')
       .eq('status', 'active')
       .order('name'),
-    supabase
-      .from('lead_facts')
-      .select('event_day')
-      .order('event_day', { ascending: true })
-      .limit(1),
+    supabase.rpc('fn_get_min_event_day'),
     supabase.rpc('fn_get_distinct_verticals'),
   ])
 
@@ -32,7 +28,7 @@ export async function GET(): Promise<NextResponse<ApiResponse<FilterOptions>>> {
   const buyers    = (buyersRes.data ?? []).map((r) => ({ id: r.id as string, name: r.name as string }))
   const verticals = Array.from(new Set<string>((verticalsRes.data ?? []).map((r: any) => r.vertical as string).filter(Boolean)))
 
-  const minDate = dateRes.data?.[0]?.event_day ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const minDate = (dateRes.data as string | null) ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const maxDate = new Date().toISOString().split('T')[0]
 
   return NextResponse.json({
