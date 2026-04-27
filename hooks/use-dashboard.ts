@@ -20,6 +20,7 @@ function qs(filters: Filters, extra?: Record<string, string>) {
   })
   if (filters.suppliers.length) p.set('suppliers', filters.suppliers.join(','))
   if (filters.buyers.length)    p.set('buyers',    filters.buyers.join(','))
+  if (filters.verticals.length) p.set('verticals', filters.verticals.join(','))
   return p.toString()
 }
 
