@@ -22,13 +22,10 @@ export async function requireAuth(): Promise<AuthResult> {
     }
   }
 
-  const { data: profile } = await supabase
-    .from('dashboard_users')
-    .select('role, partner_id')
-    .eq('id', user.id)
-    .single()
+  // Usar la función SECURITY DEFINER para evitar recursión en RLS
+  const { data: profile, error } = await supabase.rpc('fn_my_profile')
 
-  if (!profile) {
+  if (error || !profile) {
     return {
       ok: false,
       response: NextResponse.json({ data: null, error: 'No profile found' }, { status: 403 }),
@@ -39,8 +36,8 @@ export async function requireAuth(): Promise<AuthResult> {
     ok: true,
     profile: {
       userId: user.id,
-      role: profile.role as 'admin' | 'supplier',
-      partnerId: profile.partner_id ?? null,
+      role: (profile as any).role as 'admin' | 'supplier',
+      partnerId: (profile as any).partner_id ?? null,
     },
   }
 }

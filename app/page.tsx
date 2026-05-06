@@ -10,11 +10,8 @@ export default async function Home() {
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('dashboard_users')
-    .select('display_name, role, partner_id')
-    .eq('id', user.id)
-    .single()
+  const { data: profile } = await supabase.rpc('fn_my_profile')
+  const p = profile as any
 
   return (
     <main className="mx-auto max-w-screen-2xl px-4 py-6 space-y-6">
@@ -22,12 +19,12 @@ export default async function Home() {
         <h1 className="text-2xl font-semibold tracking-tight">PPL Dashboard</h1>
         <div className="flex items-center gap-3">
           <span className="text-sm text-zinc-500">
-            {profile?.display_name ?? user.email}
-            {profile?.role === 'admin' && (
+            {p?.display_name ?? user.email}
+            {p?.role === 'admin' && (
               <span className="ml-2 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Admin</span>
             )}
           </span>
-          {profile?.role === 'admin' && (
+          {p?.role === 'admin' && (
             <a href="/admin" className="text-sm text-zinc-400 hover:text-white transition-colors">
               Usuarios
             </a>

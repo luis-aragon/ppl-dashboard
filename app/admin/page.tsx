@@ -8,13 +8,10 @@ export default async function AdminPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('dashboard_users')
-    .select('display_name, role')
-    .eq('id', user.id)
-    .single()
+  const { data: profile } = await supabase.rpc('fn_my_profile')
+  const p = profile as any
 
-  if (profile?.role !== 'admin') redirect('/')
+  if (p?.role !== 'admin') redirect('/')
 
   const { data: partners } = await supabase
     .from('partners')
@@ -31,7 +28,7 @@ export default async function AdminPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Gestión de Usuarios</h1>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-zinc-500">{profile?.display_name}</span>
+          <span className="text-sm text-zinc-500">{p?.display_name}</span>
           <LogoutButton />
         </div>
       </div>
