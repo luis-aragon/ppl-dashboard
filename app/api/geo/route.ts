@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/api-auth'
 import { parseFilters } from '@/lib/parse-filters'
 import type { ApiResponse, GeoData } from '@/types/api'
 
 export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<GeoData>>> {
+  const auth = await requireAuth()
+  if (!auth.ok) return auth.response as NextResponse<ApiResponse<GeoData>>
+
   const f = parseFilters(req)
+  const suppliers = auth.profile.role === 'supplier' && auth.profile.partnerId
+    ? [auth.profile.partnerId]
+    : f.suppliers
+
+  const supabase = await createClient()
   const { data, error } = await supabase.rpc('fn_dashboard_geo', {
     p_date_from: f.dateFrom,
     p_date_to:   f.dateTo,
-    p_suppliers: f.suppliers,
+    p_suppliers: suppliers,
     p_buyers:    f.buyers,
     p_verticals: f.verticals,
   })

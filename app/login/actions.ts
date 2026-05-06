@@ -12,10 +12,12 @@ export async function login(formData: FormData) {
     password: formData.get('password') as string,
   }
 
-  const { error } = await supabase.auth.signInWithPassword(data)
+  const { data: authData, error } = await supabase.auth.signInWithPassword(data)
+
+  console.log('[login] email:', data.email, '| error:', error?.message ?? 'none', '| session:', !!authData?.session)
 
   if (error) {
-    return redirect('/login?error=Credenciales incorrectas')
+    redirect('/login?error=Credenciales incorrectas')
   }
 
   revalidatePath('/', 'layout')
@@ -25,5 +27,6 @@ export async function login(formData: FormData) {
 export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
+  revalidatePath('/', 'layout')
   redirect('/login')
 }
