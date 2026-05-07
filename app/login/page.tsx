@@ -35,7 +35,7 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
                   type="email"
                   autoComplete="email"
                   required
-                  suppressHydrationWarning
+                  defaultValue="admin@ppl.com"
                   className="block w-full rounded-md border-0 bg-zinc-950 py-2 px-3 text-white shadow-sm ring-1 ring-inset ring-zinc-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm sm:leading-6"
                 />
               </div>
@@ -52,8 +52,8 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
                   type="password"
                   autoComplete="current-password"
                   required
-                  suppressHydrationWarning
-                  className="block w-full rounded-md border-0 bg-zinc-950 py-2 px-3 text-white shadow-sm ring-1 ring-inset ring-zinc-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm sm:leading-6"
+                  defaultValue="Password123!"
+                  className="block w-full rounded-md border-0 bg-zinc-950 py-2 px-3 text-white shadow-sm ring-1 ring-inset, ring-zinc-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm sm:leading-6"
                 />
               </div>
             </div>
@@ -68,6 +68,10 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
             </div>
           </form>
           
+          <div className="mt-6 space-y-2 text-center text-xs text-zinc-500">
+            <p>Admin (Ver todo): admin@ppl.com / Password123!</p>
+            <p>Prueba Supplier: test@ppl.com / Password123!</p>
+          </div>
         </div>
       </div>
     </div>
