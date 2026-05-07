@@ -6,6 +6,9 @@ import type { Filters } from '@/hooks/use-filters'
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
+const inputCls =
+  'h-8 rounded-md border border-zinc-200 bg-white px-2.5 text-sm text-zinc-800 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-colors'
+
 interface Props {
   filters: Filters
   setFilters: (patch: Partial<Filters>) => void
@@ -14,7 +17,6 @@ interface Props {
 export function FilterBar({ filters, setFilters }: Props) {
   const { data: options } = useFilterOptions()
 
-  // Local state so the input feels responsive while typing
   const [localFrom, setLocalFrom] = useState(filters.dateFrom)
   const [localTo,   setLocalTo]   = useState(filters.dateTo)
 
@@ -22,70 +24,73 @@ export function FilterBar({ filters, setFilters }: Props) {
     setLocalFrom(val)
     if (DATE_RE.test(val)) setFilters({ dateFrom: val })
   }
-
   function commitTo(val: string) {
     setLocalTo(val)
     if (DATE_RE.test(val)) setFilters({ dateTo: val })
   }
 
+  const hasActive = filters.suppliers.length > 0 || filters.buyers.length > 0 || filters.verticals.length > 0
+
   return (
-    <div className="flex flex-wrap gap-3 items-end rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
+    <div className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
       {/* Date range */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-zinc-500">From</label>
+        <label className="text-xs font-medium text-zinc-500">Desde</label>
         <input
           type="date"
           value={localFrom}
           onChange={(e) => setLocalFrom(e.target.value)}
-          onBlur={(e)   => commitFrom(e.target.value)}
-          className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+          onBlur={(e) => commitFrom(e.target.value)}
+          className={inputCls}
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-zinc-500">To</label>
+        <label className="text-xs font-medium text-zinc-500">Hasta</label>
         <input
           type="date"
           value={localTo}
           onChange={(e) => setLocalTo(e.target.value)}
-          onBlur={(e)   => commitTo(e.target.value)}
-          className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+          onBlur={(e) => commitTo(e.target.value)}
+          className={inputCls}
         />
       </div>
 
-      {/* Buyers */}
+      {/* Divider */}
+      <div className="h-8 w-px bg-zinc-200" />
+
+      {/* Buyer */}
       <div className="flex flex-col gap-1">
         <label className="text-xs font-medium text-zinc-500">Buyer</label>
         <select
-          multiple={false}
           value={filters.buyers[0] ?? ''}
           onChange={(e) => setFilters({ buyers: e.target.value ? [e.target.value] : [] })}
-          className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+          className={inputCls}
         >
-          <option value="">All buyers</option>
+          <option value="">Todos</option>
           {(options?.buyers ?? []).map((b) => (
             <option key={b.id} value={b.id}>{b.name}</option>
           ))}
         </select>
       </div>
 
-      {/* Suppliers multi-select */}
+      {/* Supplier */}
       <div className="flex flex-col gap-1">
         <label className="text-xs font-medium text-zinc-500">
-          Suppliers{filters.suppliers.length > 0 && ` (${filters.suppliers.length})`}
+          Supplier{filters.suppliers.length > 0 && ` (${filters.suppliers.length})`}
         </label>
         <select
           value={filters.suppliers[0] ?? ''}
           onChange={(e) => setFilters({ suppliers: e.target.value ? [e.target.value] : [] })}
-          className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+          className={inputCls}
         >
-          <option value="">All suppliers</option>
+          <option value="">Todos</option>
           {(options?.suppliers ?? []).map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
       </div>
 
-      {/* Verticals multi-select */}
+      {/* Vertical */}
       <div className="flex flex-col gap-1">
         <label className="text-xs font-medium text-zinc-500">
           Vertical{filters.verticals.length > 0 && ` (${filters.verticals.length})`}
@@ -93,18 +98,21 @@ export function FilterBar({ filters, setFilters }: Props) {
         <select
           value={filters.verticals[0] ?? ''}
           onChange={(e) => setFilters({ verticals: e.target.value ? [e.target.value] : [] })}
-          className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+          className={inputCls}
         >
-          <option value="">All verticals</option>
+          <option value="">Todos</option>
           {(options?.verticals ?? []).map((v) => (
             <option key={v} value={v}>{v}</option>
           ))}
         </select>
       </div>
 
+      {/* Divider */}
+      <div className="h-8 w-px bg-zinc-200" />
+
       {/* Granularity */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-zinc-500">Granularity</label>
+        <label className="text-xs font-medium text-zinc-500">Agrupación</label>
         <div className="flex h-8 overflow-hidden rounded-md border border-zinc-200 bg-white text-sm">
           {(['day', 'week', 'month'] as const).map((g) => (
             <button
@@ -112,23 +120,23 @@ export function FilterBar({ filters, setFilters }: Props) {
               onClick={() => setFilters({ granularity: g })}
               className={`px-3 capitalize transition-colors ${
                 filters.granularity === g
-                  ? 'bg-zinc-900 text-white'
+                  ? 'bg-zinc-900 text-white font-medium'
                   : 'text-zinc-600 hover:bg-zinc-50'
               }`}
             >
-              {g}
+              {g === 'day' ? 'Día' : g === 'week' ? 'Sem' : 'Mes'}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Reset */}
-      {(filters.suppliers.length > 0 || filters.buyers.length > 0 || filters.verticals.length > 0) && (
+      {/* Clear */}
+      {hasActive && (
         <button
           onClick={() => setFilters({ suppliers: [], buyers: [], verticals: [] })}
-          className="ml-auto h-8 rounded-md px-3 text-sm text-zinc-500 hover:bg-zinc-100"
+          className="ml-auto h-8 rounded-md px-3 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
         >
-          Clear filters
+          Limpiar filtros
         </button>
       )}
     </div>

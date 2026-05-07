@@ -6,26 +6,26 @@ import type { Filters } from '@/hooks/use-filters'
 import type { SupplierRow } from '@/types/api'
 
 const COLS: { key: keyof SupplierRow; label: string; fmt?: (v: number) => string }[] = [
-  { key: 'supplier_name',  label: 'Supplier' },
-  { key: 'total_leads',    label: 'Leads',     fmt: (v) => (v ?? 0).toLocaleString() },
-  { key: 'accepted',       label: 'Accepted',  fmt: (v) => (v ?? 0).toLocaleString() },
-  { key: 'accepted_pct',   label: 'Acc%',      fmt: (v) => `${(v ?? 0).toFixed(1)}%` },
-  { key: 'rejected',       label: 'Rejected',  fmt: (v) => (v ?? 0).toLocaleString() },
-  { key: 'duplicate',      label: 'Dupes',     fmt: (v) => (v ?? 0).toLocaleString() },
-  { key: 'sold',           label: 'Sold',      fmt: (v) => (v ?? 0).toLocaleString() },
-  { key: 'revenue',        label: 'Revenue',   fmt: (v) => `$${(v ?? 0).toLocaleString()}` },
-  { key: 'cost',           label: 'Cost',      fmt: (v) => `$${(v ?? 0).toLocaleString()}` },
-  { key: 'profit',         label: 'Profit',    fmt: (v) => `$${(v ?? 0).toLocaleString()}` },
-  { key: 'profit_rate',    label: 'Margin',    fmt: (v) => `${(v ?? 0).toFixed(1)}%` },
-  { key: 'cpa',            label: 'CPA',       fmt: (v) => `$${(v ?? 0).toFixed(2)}` },
+  { key: 'supplier_name', label: 'Supplier' },
+  { key: 'total_leads',   label: 'Leads',    fmt: (v) => (v ?? 0).toLocaleString() },
+  { key: 'accepted',      label: 'Accepted', fmt: (v) => (v ?? 0).toLocaleString() },
+  { key: 'accepted_pct',  label: 'Acc%',     fmt: (v) => `${(v ?? 0).toFixed(1)}%` },
+  { key: 'rejected',      label: 'Rejected', fmt: (v) => (v ?? 0).toLocaleString() },
+  { key: 'duplicate',     label: 'Dupes',    fmt: (v) => (v ?? 0).toLocaleString() },
+  { key: 'sold',          label: 'Sold',     fmt: (v) => (v ?? 0).toLocaleString() },
+  { key: 'revenue',       label: 'Revenue',  fmt: (v) => `$${(v ?? 0).toLocaleString()}` },
+  { key: 'cost',          label: 'Cost',     fmt: (v) => `$${(v ?? 0).toLocaleString()}` },
+  { key: 'profit',        label: 'Profit',   fmt: (v) => `$${(v ?? 0).toLocaleString()}` },
+  { key: 'profit_rate',   label: 'Margin',   fmt: (v) => `${(v ?? 0).toFixed(1)}%` },
+  { key: 'cpa',           label: 'CPA',      fmt: (v) => `$${(v ?? 0).toFixed(2)}` },
 ]
 
 interface Props { filters: Filters }
 
 export function SupplierTable({ filters }: Props) {
-  const [sortBy, setSortBy]   = useState<string>('total_leads')
+  const [sortBy,  setSortBy]  = useState<string>('total_leads')
   const [sortDir, setSortDir] = useState<string>('desc')
-  const [page, setPage]       = useState(1)
+  const [page,    setPage]    = useState(1)
 
   const { data, isLoading } = useSuppliers(filters, sortBy, sortDir, page)
 
@@ -35,58 +35,88 @@ export function SupplierTable({ filters }: Props) {
     setPage(1)
   }
 
-  if (isLoading) return <div className="h-48 rounded-xl bg-zinc-100 animate-pulse" />
+  if (isLoading) return <div className="h-64 rounded-xl bg-zinc-100 animate-pulse" />
 
-  const rows = data?.rows ?? []
-  const total = data?.total ?? 0
-  const pageSize = data?.page_size ?? 20
+  const rows      = data?.rows ?? []
+  const total     = data?.total ?? 0
+  const pageSize  = data?.page_size ?? 20
   const pageCount = Math.ceil(total / pageSize)
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-zinc-100">
-        <h2 className="text-sm font-semibold text-zinc-700">Supplier Ranking</h2>
+    <div className="flex flex-col rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-zinc-100">
+        <h2 className="text-sm font-semibold text-zinc-700">Ranking de Suppliers</h2>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-zinc-100 bg-zinc-50">
+            <tr className="border-b border-zinc-100 bg-zinc-50/80">
               {COLS.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => col.key !== 'supplier_name' && handleSort(col.key)}
-                  className={`px-3 py-2 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide whitespace-nowrap ${col.key !== 'supplier_name' ? 'cursor-pointer hover:text-zinc-900 select-none' : ''}`}
+                  className={`px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wide whitespace-nowrap select-none ${
+                    col.key !== 'supplier_name'
+                      ? 'cursor-pointer text-zinc-400 hover:text-zinc-700 transition-colors'
+                      : 'text-zinc-500'
+                  } ${sortBy === col.key ? 'text-zinc-700' : ''}`}
                 >
                   {col.label}
-                  {sortBy === col.key && (sortDir === 'desc' ? ' ↓' : ' ↑')}
+                  {sortBy === col.key && (
+                    <span className="ml-1 text-zinc-400">{sortDir === 'desc' ? '↓' : '↑'}</span>
+                  )}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.supplier_id} className="border-b border-zinc-50 hover:bg-zinc-50/50">
+            {rows.map((row, i) => (
+              <tr
+                key={row.supplier_id}
+                className={`border-b border-zinc-50 transition-colors hover:bg-zinc-50 ${i % 2 === 0 ? '' : 'bg-zinc-50/30'}`}
+              >
                 {COLS.map((col) => {
                   const raw = row[col.key]
                   const num = typeof raw === 'number' ? raw : (typeof raw === 'string' && raw !== '' ? parseFloat(raw) : null)
-                  const val = col.fmt && num !== null && !isNaN(num) ? col.fmt(num) : String(raw ?? '-')
-                  return <td key={col.key} className="px-3 py-2 text-zinc-700 whitespace-nowrap">{val}</td>
+                  const val = col.fmt && num !== null && !isNaN(num) ? col.fmt(num) : String(raw ?? '—')
+                  const isName = col.key === 'supplier_name'
+                  return (
+                    <td key={col.key} className={`px-3 py-2.5 whitespace-nowrap tabular-nums ${isName ? 'font-medium text-zinc-800' : 'text-zinc-600'}`}>
+                      {val}
+                    </td>
+                  )
                 })}
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={COLS.length} className="px-3 py-8 text-center text-zinc-400">No data</td></tr>
+              <tr>
+                <td colSpan={COLS.length} className="px-3 py-10 text-center text-zinc-400 text-sm">
+                  Sin datos
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
       {pageCount > 1 && (
-        <div className="flex items-center justify-between px-4 py-2 border-t border-zinc-100 text-xs text-zinc-500">
+        <div className="flex items-center justify-between border-t border-zinc-100 px-4 py-2.5 text-xs text-zinc-500">
           <span>{total} suppliers</span>
-          <div className="flex gap-2">
-            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="px-2 py-1 rounded hover:bg-zinc-100 disabled:opacity-40">Prev</button>
-            <span>{page} / {pageCount}</span>
-            <button disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)} className="px-2 py-1 rounded hover:bg-zinc-100 disabled:opacity-40">Next</button>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="rounded px-2.5 py-1 transition-colors hover:bg-zinc-100 disabled:opacity-40"
+            >
+              Ant
+            </button>
+            <span className="px-1">{page} / {pageCount}</span>
+            <button
+              disabled={page >= pageCount}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded px-2.5 py-1 transition-colors hover:bg-zinc-100 disabled:opacity-40"
+            >
+              Sig
+            </button>
           </div>
         </div>
       )}

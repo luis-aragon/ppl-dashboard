@@ -19,11 +19,11 @@ interface Props { data: GeoData | null; isLoading: boolean }
 export function GeoMap({ data, isLoading }: Props) {
   if (isLoading) return <div className="h-72 rounded-xl bg-zinc-100 animate-pulse" />
 
-  const byState = Object.fromEntries((data ?? []).map((r) => [r.state, r]))
+  const byState  = Object.fromEntries((data ?? []).map((r) => [r.state, r]))
   const maxLeads = Math.max(1, ...(data ?? []).map((r) => r.total_leads ?? 0))
 
-  function fill(stateAbbr: string) {
-    const row = byState[stateAbbr]
+  function fill(abbr: string) {
+    const row = byState[abbr]
     if (!row) return '#f4f4f5'
     const intensity = (row.total_leads ?? 0) / maxLeads
     const lightness = Math.round(90 - intensity * 55)
@@ -31,10 +31,15 @@ export function GeoMap({ data, isLoading }: Props) {
   }
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
-      <h2 className="mb-2 text-sm font-semibold text-zinc-700">Geographic Distribution</h2>
+    <div className="flex flex-col rounded-xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
+      <div className="mb-3">
+        <h2 className="text-sm font-semibold text-zinc-700">Distribución Geográfica</h2>
+        <p className="text-xs text-zinc-400 mt-0.5">Leads por estado (EE.UU.)</p>
+      </div>
       {(!data || data.length === 0) ? (
-        <div className="flex h-64 items-center justify-center text-sm text-zinc-400">No geo data</div>
+        <div className="flex flex-1 items-center justify-center py-16 text-sm text-zinc-400">
+          Sin datos geográficos
+        </div>
       ) : (
         <ComposableMap projection="geoAlbersUsa" className="w-full max-h-64">
           <Geographies geography={GEO_URL}>
@@ -49,9 +54,17 @@ export function GeoMap({ data, isLoading }: Props) {
                     fill={fill(abbr)}
                     stroke="#ffffff"
                     strokeWidth={0.5}
-                    style={{ default: { outline: 'none' }, hover: { outline: 'none', fill: '#fbbf24' }, pressed: { outline: 'none' } }}
+                    style={{
+                      default: { outline: 'none' },
+                      hover:   { outline: 'none', fill: '#fbbf24', cursor: 'pointer' },
+                      pressed: { outline: 'none' },
+                    }}
                     data-tooltip-id="geo-tip"
-                    data-tooltip-content={row ? `${abbr}: ${row.total_leads ?? 0} leads, $${(row.revenue ?? 0).toLocaleString()}` : abbr}
+                    data-tooltip-content={
+                      row
+                        ? `${abbr}: ${row.total_leads ?? 0} leads, $${(row.revenue ?? 0).toLocaleString()}`
+                        : abbr
+                    }
                   />
                 )
               })
