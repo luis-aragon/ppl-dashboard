@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useLeads } from '@/hooks/use-dashboard'
 import type { Filters } from '@/hooks/use-filters'
 
+
 const STATUS_STYLES: Record<string, string> = {
   accepted:  'bg-emerald-500/10 text-emerald-700',
   rejected:  'bg-red-500/10 text-red-600',
@@ -11,17 +12,14 @@ const STATUS_STYLES: Record<string, string> = {
   error:     'bg-zinc-100 text-zinc-500',
 }
 
-interface Props {
-  filters: Filters
-  supplierIdOverride?: string
-}
+interface Props { filters: Filters }
 
-export function LeadsTable({ filters, supplierIdOverride }: Props) {
+export function LeadsTable({ filters }: Props) {
   const [sortBy,  setSortBy]  = useState('event_day')
   const [sortDir, setSortDir] = useState('desc')
   const [page,    setPage]    = useState(1)
 
-  const { data, isLoading } = useLeads(filters, sortBy, sortDir, page, supplierIdOverride)
+  const { data, isLoading } = useLeads(filters, sortBy, sortDir, page)
 
   function handleSort(key: string) {
     if (sortBy === key) setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))

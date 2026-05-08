@@ -1,0 +1,1209 @@
+{
+  "name": "RP - LP API Ingesta (Campañas + Logs)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "node-schedule",
+      "name": "⏰ Schedule (cada 6h)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const SUPABASE_URL = 'https://yqsdeufqbmkcznroieki.supabase.co';\nconst now     = new Date();\nconst today   = now.toISOString().slice(0, 10);\nconst statsFrom = new Date(now.getTime() - 30 * 86400000).toISOString().slice(0, 10);\nconst run_id  = 'run-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);\n\nreturn [{ json: { SUPABASE_URL, run_id, stats_date_from: statsFrom, stats_date_to: today } }];\n"
+      },
+      "id": "node-config",
+      "name": "⚙️ Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.leadprosper.io/public/stats",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "start_date",
+              "value": "={{ $('⚙️ Config').first().json.stats_date_from }}"
+            },
+            {
+              "name": "end_date",
+              "value": "={{ $('⚙️ Config').first().json.stats_date_to }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-fetch-campaigns",
+      "name": "📋 LP: Fetch Campañas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -320,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bCmaLylyN2A05WXA",
+          "name": "LeadProsperApi"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg   = $('⚙️ Config').first().json;\nconst items = $input.all();\n\nconst campaigns = [];\nfor (const item of items) {\n  const raw = item.json;\n  const c = (raw && raw.campaign && raw.campaign.id) ? raw.campaign : raw;\n  if (!c || !c.id) {\n    console.warn('Item sin id ignorado:', JSON.stringify(raw).slice(0, 200));\n    continue;\n  }\n  const nameLower = (c.name || '').toLowerCase();\n  let vertical = 'unknown';\n  if (nameLower.includes('window'))    vertical = 'windows';\n  else if (nameLower.includes('roof')) vertical = 'roofing';\n\n  campaigns.push({\n    lp_campaign_id: String(c.id),\n    name:           c.name || 'Sin nombre',\n    public_name:    c.public_name || c.name || 'Sin nombre',\n    vertical,\n    status:         'active',\n    updated_at:     new Date().toISOString(),\n    run_id:       cfg.run_id,\n    SUPABASE_URL: cfg.SUPABASE_URL,\n  });\n}\n\nif (campaigns.length === 0) {\n  throw new Error('Parsear Campañas: 0 campañas válidas. Primer item: ' + JSON.stringify($input.first().json).slice(0, 300));\n}\n\nconsole.log('Campañas encontradas: ' + campaigns.length);\nreturn campaigns.map(c => ({ json: c }));"
+      },
+      "id": "node-parse-campaigns",
+      "name": "🔍 Parsear Campañas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yqsdeufqbmkcznroieki.supabase.co/rest/v1/lp_campaigns",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "on_conflict",
+              "value": "lp_campaign_id"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lp_campaign_id: $json.lp_campaign_id, name: $json.name, public_name: $json.public_name, vertical: $json.vertical, status: $json.status, updated_at: $json.updated_at }) }}",
+        "options": {}
+      },
+      "id": "node-upsert-campaigns",
+      "name": "💾 Upsert lp_campaigns",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        256,
+        32
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "bE5Kzpcay5MEET1t",
+          "name": "RP Supabase"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://yqsdeufqbmkcznroieki.supabase.co/rest/v1/lp_campaigns",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "lp_campaign_id,name,vertical,last_synced_at,sync_from_date"
+            },
+            {
+              "name": "lp_campaign_id",
+              "value": "={{ 'eq.' + $json.lp_campaign_id }}"
+            },
+            {
+              "name": "limit",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-get-watermark",
+      "name": "🕐 Leer Watermark",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        544,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "bE5Kzpcay5MEET1t",
+          "name": "RP Supabase"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allWatermarks = $('🕐 Leer Watermark').all();\nconst allCampaigns  = $('💾 Upsert lp_campaigns').all();\n\nreturn allCampaigns.map(c => {\n  const campaign = c.json;\n  const wm = allWatermarks.find(w => w.json.lp_campaign_id === campaign.lp_campaign_id)?.json || {};\n\n  return {\n    json: {\n      lp_campaign_id: campaign.lp_campaign_id,\n      name:           campaign.name     || wm.name,\n      vertical:       campaign.vertical || wm.vertical,\n      run_id:         campaign.run_id,\n      SUPABASE_URL:   campaign.SUPABASE_URL,\n      last_synced_at: wm.last_synced_at || null,\n      sync_from_date: wm.sync_from_date || null,\n    }\n  };\n});\n"
+      },
+      "id": "node-merge-campaign-watermark",
+      "name": "🔗 Merge Campaña + Watermark",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst cfg   = $('⚙️ Config').first().json;\nconst overrideFrom = cfg.stats_date_from || null;\nconst overrideTo   = cfg.stats_date_to   || null;\n\nconst results = items.map(item => {\n  const data = item.json;\n  if (!data || typeof data !== 'object') {\n    return { json: { error: 'Datos de entrada inválidos', item: data } };\n  }\n\n  const now      = new Date();\n  const today    = now.toISOString().slice(0, 10);\n  const MAX_DAYS = 90;\n  const minDate  = new Date(now.getTime() - MAX_DAYS * 86400000).toISOString().slice(0, 10);\n\n  let dateFrom, dateTo;\n\n  if (overrideFrom && overrideTo) {\n    dateFrom = overrideFrom;\n    dateTo   = overrideTo;\n  } else {\n    const lastSync = data.last_synced_at || null;\n    const syncFrom = data.sync_from_date  || null;\n    if (lastSync) {\n      let d = new Date(lastSync);\n      d.setDate(d.getDate() - 1);\n      dateFrom = d.toISOString().slice(0, 10);\n    } else if (syncFrom) {\n      dateFrom = syncFrom;\n    } else {\n      dateFrom = minDate;\n    }\n    if (dateFrom < minDate) dateFrom = minDate;\n    dateTo = today;\n  }\n\n  return {\n    json: {\n      lp_campaign_id: data.lp_campaign_id,\n      name:           data.name     || 'Sin nombre',\n      vertical:       data.vertical || 'Sin vertical',\n      run_id:         data.run_id,\n      SUPABASE_URL:   data.SUPABASE_URL,\n      date_from:      dateFrom,\n      date_to:        dateTo,\n      debug_log:      `Fetch: ${dateFrom} -> ${dateTo}${overrideFrom ? ' (override)' : ''}`\n    }\n  };\n});\n\nreturn results;\n"
+      },
+      "id": "node-calc-range",
+      "name": "📅 Calcular Rango",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yqsdeufqbmkcznroieki.supabase.co/rest/v1/lp_sync_log",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ run_id: $json.run_id, lp_campaign_id: $json.lp_campaign_id, status: 'running', date_from: $json.date_from, date_to: $json.date_to }) }}",
+        "options": {}
+      },
+      "id": "node-create-sync-log",
+      "name": "📝 Crear Sync Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1360,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "bE5Kzpcay5MEET1t",
+          "name": "RP Supabase"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const logs = $input.all();\n\nreturn logs.map(item => {\n  const log = item.json;\n  const logData = Array.isArray(log) ? log[0] : log;\n  const campaignInfo = $('📅 Calcular Rango').all().find(c => c.json.lp_campaign_id === logData.lp_campaign_id)?.json || {};\n\n  return {\n    json: {\n      lp_campaign_id: logData.lp_campaign_id,\n      name:           campaignInfo.name     || 'Sin nombre',\n      vertical:       campaignInfo.vertical || 'Sin vertical',\n      run_id:         campaignInfo.run_id,\n      SUPABASE_URL:   campaignInfo.SUPABASE_URL,\n      date_from:      logData.date_from,\n      date_to:        logData.date_to,\n      sync_log_id:    logData.id,\n      search_after:   '',\n      total_fetched:  0,\n      total_inserted: 0\n    }\n  };\n});\n"
+      },
+      "id": "node-init-loop",
+      "name": "🔄 Init Loop",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        -32
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "node-loop-over-pages",
+      "name": "🔁 Loop Páginas",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1952,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ (() => { const s = $json; const p = ['campaign=' + encodeURIComponent(s.lp_campaign_id), 'start_date=' + encodeURIComponent(s.date_from), 'end_date=' + encodeURIComponent(s.date_to), 'timezone=UTC']; if (s.search_after) p.push('search_after=' + encodeURIComponent(s.search_after)); return 'https://api.leadprosper.io/public/leads?' + p.join('&'); })() }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "node-fetch-leads",
+      "name": "📥 LP: Fetch Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2080,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bCmaLylyN2A05WXA",
+          "name": "LeadProsperApi"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const state = $('🔄 Init Loop').item.json;\nconst httpResp = $input.item.json;\nlet leads = [];\nif (Array.isArray(httpResp)) {\n  leads = httpResp;\n} else if (httpResp.body && Array.isArray(httpResp.body)) {\n  if (httpResp.statusCode >= 400) throw new Error('LP API HTTP ' + httpResp.statusCode);\n  leads = httpResp.body;\n}\nconst loopState = $('🔁 Acumular Contadores').item ? $('🔁 Acumular Contadores').item.json : state;\nconst currentState = (loopState && loopState.sync_log_id) ? loopState : state;\n\nconst count = leads.length;\n\nconst nameLower = (currentState.name || '').toLowerCase();\nvar vertical = currentState.vertical || 'unknown';\nif (nameLower.includes('window'))    vertical = 'windows';\nelse if (nameLower.includes('roof')) vertical = 'roofing';\n\nconst rows = leads.map(function(lead) {\n  var leadDate = null;\n  if (lead.lead_date_ms) leadDate = new Date(parseInt(lead.lead_date_ms, 10)).toISOString();\n  var supplierId   = lead.supplier ? String(lead.supplier.id || '') : '';\n  var supplierName = lead.supplier ? (lead.supplier.name || '') : '';\n\n  const hashInput = JSON.stringify({ id: lead.id, status: lead.status, cost: lead.cost, revenue: lead.revenue });\n  let hash = 0;\n  for (let i = 0; i < hashInput.length; i++) { hash = ((hash << 5) - hash) + hashInput.charCodeAt(i); hash |= 0; }\n  const row_hash = Math.abs(hash).toString(16).padStart(8, '0');\n\n  return {\n    leadprosper_lead_id: lead.id,\n    row_hash,\n    source:              'leadprosper_api',\n    lp_campaign_id:      String(lead.campaign_id || currentState.lp_campaign_id),\n    campaign_name:       lead.campaign_name || currentState.name,\n    lead_created_at:     leadDate,\n    status:              lead.status,\n    lp_cost:             lead.cost    || 0,\n    lp_revenue:          lead.revenue || 0,\n    supplier_id_lp:      supplierId,\n    supplier_name:       supplierName,\n    vertical,\n    raw_payload:         lead,\n    buyers:              lead.buyers || [],\n    processed_to_facts:  false,\n    fetched_at:          new Date().toISOString(),\n  };\n});\n\nvar lastLead        = leads.length > 0 ? leads[leads.length - 1] : null;\nvar nextSearchAfter = (lastLead && count >= 100) ? lastLead.id : '';\nvar isDone          = count === 0 || count < 100 || !nextSearchAfter;\n\nconsole.log('Página ' + currentState.search_after + ': ' + count + ' leads. Done: ' + isDone);\n\nreturn [{ json: {\n  lp_campaign_id: currentState.lp_campaign_id,\n  name:           currentState.name,\n  vertical:       currentState.vertical,\n  run_id:         currentState.run_id,\n  SUPABASE_URL:   currentState.SUPABASE_URL,\n  date_from:      currentState.date_from,\n  date_to:        currentState.date_to,\n  sync_log_id:    currentState.sync_log_id,\n  search_after:   nextSearchAfter,\n  total_fetched:  currentState.total_fetched + count,\n  total_inserted: currentState.total_inserted,\n  leads_batch:    rows,\n  done:           isDone,\n} }];"
+      },
+      "id": "node-transform-leads",
+      "name": "🔧 Transformar Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2320,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yqsdeufqbmkcznroieki.supabase.co/rest/v1/lp_leads_raw",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "on_conflict",
+              "value": "leadprosper_lead_id"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.leads_batch) }}",
+        "options": {}
+      },
+      "id": "node-upsert-leads",
+      "name": "💾 Upsert lp_leads_raw",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2560,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "bE5Kzpcay5MEET1t",
+          "name": "RP Supabase"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const state      = $('🔧 Transformar Leads').item.json;\nconst batchCount = state.leads_batch ? state.leads_batch.length : 0;\n\nreturn [{ json: {\n  lp_campaign_id: state.lp_campaign_id,\n  name:           state.name,\n  vertical:       state.vertical,\n  run_id:         state.run_id,\n  SUPABASE_URL:   state.SUPABASE_URL,\n  date_from:      state.date_from,\n  date_to:        state.date_to,\n  sync_log_id:    state.sync_log_id,\n  search_after:   state.search_after,\n  total_fetched:  state.total_fetched,\n  total_inserted: state.total_inserted + batchCount,\n  done:           state.done,\n} }];"
+      },
+      "id": "node-check-loop",
+      "name": "🔁 Acumular Contadores",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2800,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-not-done",
+              "leftValue": "={{ $json.done }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-branch-loop",
+      "name": "¿Más páginas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3040,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const state = $input.item.json;\nreturn [{ json: state }];"
+      },
+      "id": "node-next-page",
+      "name": "➡️ Siguiente Página",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        -128
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://yqsdeufqbmkcznroieki.supabase.co/rest/v1/lp_sync_log",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ 'eq.' + $json.sync_log_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'success', finished_at: new Date().toISOString(), leads_fetched: $json.total_fetched, leads_inserted: $json.total_inserted }) }}",
+        "options": {}
+      },
+      "id": "node-close-sync-log",
+      "name": "✅ Cerrar Sync Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2880,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "bE5Kzpcay5MEET1t",
+          "name": "RP Supabase"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Leer el estado desde Acumular Contadores (siempre ejecutado antes en este path)\nconst state = $('🔁 Acumular Contadores').item.json;\n\nif (!state || !state.lp_campaign_id) {\n  throw new Error('Preparar Watermark: no hay lp_campaign_id. State: ' + JSON.stringify(state).slice(0, 200));\n}\n\nreturn [{ json: {\n  lp_campaign_id: state.lp_campaign_id,\n  sync_log_id:    state.sync_log_id,\n  updated_at:     new Date().toISOString(),\n} }];"
+      },
+      "id": "node-prep-watermark",
+      "name": "🔧 Preparar Watermark",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        128
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://yqsdeufqbmkcznroieki.supabase.co/rest/v1/lp_campaigns",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "lp_campaign_id",
+              "value": "={{ 'eq.' + $json.lp_campaign_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ last_synced_at: new Date().toISOString(), updated_at: new Date().toISOString() }) }}",
+        "options": {}
+      },
+      "id": "node-update-watermark",
+      "name": "💧 Actualizar Watermark",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        3904,
+        32
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "bE5Kzpcay5MEET1t",
+          "name": "RP Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const state = $input.first().json;\nlet sync_log_id    = state.sync_log_id    || null;\nlet lp_campaign_id = state.lp_campaign_id || null;\nlet error_message  = 'Error en ejecución del workflow — revisar logs de n8n';\nif (state.error && state.error.message)  error_message = state.error.message;\nelse if (state.message)                  error_message = state.message;\nconsole.error('ERROR HANDLER:', error_message);\nreturn [{ json: { sync_log_id, lp_campaign_id, SUPABASE_URL: state.SUPABASE_URL || 'https://yqsdeufqbmkcznroieki.supabase.co', error_message, has_sync_log: sync_log_id !== null } }];"
+      },
+      "id": "node-on-error",
+      "name": "❌ Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2592,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-has-log",
+              "leftValue": "={{ $json.has_sync_log }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-branch-has-log",
+      "name": "¿Tiene sync_log?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2896,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://yqsdeufqbmkcznroieki.supabase.co/rest/v1/lp_sync_log",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ 'eq.' + $json.sync_log_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'error', finished_at: new Date().toISOString(), error_message: $json.error_message }) }}",
+        "options": {}
+      },
+      "id": "node-log-error",
+      "name": "📋 Log Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        3104,
+        384
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "bE5Kzpcay5MEET1t",
+          "name": "RP Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "luis@rpsolutions.io",
+        "subject": "=❌ LP Ingesta ERROR — {{ $('❌ Error Handler').first().json.lp_campaign_id || 'unknown' }}",
+        "emailType": "text",
+        "message": "=Error en workflow LP API Ingesta.\n\nSync Log ID: {{ $('❌ Error Handler').first().json.sync_log_id || 'N/A' }}\nCampaña: {{ $('❌ Error Handler').first().json.lp_campaign_id || 'N/A' }}\nMensaje: {{ $('❌ Error Handler').first().json.error_message }}\n\nRevisar logs en n8n: https://n8n.rpworldllc.com",
+        "options": {}
+      },
+      "id": "node-alarm-email",
+      "name": "📧 Alarma Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        3296,
+        512
+      ],
+      "webhookId": "b45b7101-2dff-4030-ba65-1b8fb1f50dad",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "u5q0VSnuIcwhjL8Z",
+          "name": "luis@rpsolutions"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yqsdeufqbmkcznroieki.supabase.co/rest/v1/rpc/fn_process_lp_leads_raw",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        4144,
+        32
+      ],
+      "id": "f1f98194-4b25-4197-a32d-140505faf52f",
+      "name": "⚡ Procesar lead_facts",
+      "credentials": {
+        "supabaseApi": {
+          "id": "bE5Kzpcay5MEET1t",
+          "name": "RP Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://yqsdeufqbmkcznroieki.supabase.co/rest/v1/lp_sync_log",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "run_id",
+              "value": "={{ 'eq.' + $('⚙️ Config').first().json.run_id }}"
+            },
+            {
+              "name": "status",
+              "value": "eq.error"
+            },
+            {
+              "name": "select",
+              "value": "id,lp_campaign_id,error_message,date_from,date_to"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "node-fetch-run-errors",
+      "name": "🔍 Buscar Errores Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        4400,
+        32
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "bE5Kzpcay5MEET1t",
+          "name": "RP Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst errors = Array.isArray(resp.body) ? resp.body : (resp.body ? [resp.body] : []);\nconst run_id = $('⚙️ Config').first().json.run_id;\nconst error_count = errors.length;\nconst has_errors = error_count > 0;\n\nlet email_body = `Workflow: RP - LP API Ingesta\\nRun ID: ${run_id}\\nErrores encontrados: ${error_count}\\n\\n`;\nif (has_errors) {\n  email_body += errors.map((e, i) =>\n    `${i + 1}. Campaña ${e.lp_campaign_id || 'N/A'}\\n   Error: ${e.error_message || 'sin mensaje'}\\n   Rango: ${e.date_from || '?'} → ${e.date_to || '?'}`\n  ).join('\\n\\n');\n}\nemail_body += '\\n\\nRevisar logs en n8n: https://n8n.rpworldllc.com';\n\nreturn [{ json: { has_errors, error_count, run_id, email_body } }];"
+      },
+      "id": "node-build-error-report",
+      "name": "📋 Preparar Reporte",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4640,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-has-errors",
+              "leftValue": "={{ $json.has_errors }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-branch-has-errors",
+      "name": "¿Hay errores en el run?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        4880,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "luis@rpsolutions.io",
+        "subject": "=❌ LP Ingesta — {{ $json.error_count }} error(es) — run {{ $json.run_id }}",
+        "emailType": "text",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      },
+      "id": "node-alarm-email",
+      "name": "📧 Alarma Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        5120,
+        32
+      ],
+      "webhookId": "b45b7101-2dff-4030-ba65-1b8fb1f50dad",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "u5q0VSnuIcwhjL8Z",
+          "name": "luis@rpsolutions"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "⏰ Schedule (cada 6h)": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Config": {
+      "main": [
+        [
+          {
+            "node": "📋 LP: Fetch Campañas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 LP: Fetch Campañas": {
+      "main": [
+        [
+          {
+            "node": "🔍 Parsear Campañas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Parsear Campañas": {
+      "main": [
+        [
+          {
+            "node": "💾 Upsert lp_campaigns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Upsert lp_campaigns": {
+      "main": [
+        [
+          {
+            "node": "🕐 Leer Watermark",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🕐 Leer Watermark": {
+      "main": [
+        [
+          {
+            "node": "🔗 Merge Campaña + Watermark",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Merge Campaña + Watermark": {
+      "main": [
+        [
+          {
+            "node": "📅 Calcular Rango",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📅 Calcular Rango": {
+      "main": [
+        [
+          {
+            "node": "📝 Crear Sync Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Crear Sync Log": {
+      "main": [
+        [
+          {
+            "node": "🔄 Init Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Init Loop": {
+      "main": [
+        [
+          {
+            "node": "🔁 Loop Páginas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔁 Loop Páginas": {
+      "main": [
+        [
+          {
+            "node": "📥 LP: Fetch Leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "⚡ Procesar lead_facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📥 LP: Fetch Leads": {
+      "main": [
+        [
+          {
+            "node": "🔧 Transformar Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔧 Transformar Leads": {
+      "main": [
+        [
+          {
+            "node": "💾 Upsert lp_leads_raw",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Upsert lp_leads_raw": {
+      "main": [
+        [
+          {
+            "node": "🔁 Acumular Contadores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔁 Acumular Contadores": {
+      "main": [
+        [
+          {
+            "node": "¿Más páginas?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Más páginas?": {
+      "main": [
+        [
+          {
+            "node": "➡️ Siguiente Página",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "✅ Cerrar Sync Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "➡️ Siguiente Página": {
+      "main": [
+        [
+          {
+            "node": "🔁 Loop Páginas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Cerrar Sync Log": {
+      "main": [
+        [
+          {
+            "node": "🔧 Preparar Watermark",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔧 Preparar Watermark": {
+      "main": [
+        [
+          {
+            "node": "💧 Actualizar Watermark",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "❌ Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💧 Actualizar Watermark": {
+      "main": [
+        [
+          {
+            "node": "🔁 Loop Páginas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "❌ Error Handler": {
+      "main": [
+        [
+          {
+            "node": "¿Tiene sync_log?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tiene sync_log?": {
+      "main": [
+        [
+          {
+            "node": "📋 Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚡ Procesar lead_facts": {
+      "main": [
+        [
+          {
+            "node": "🔍 Buscar Errores Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Buscar Errores Run": {
+      "main": [
+        [
+          {
+            "node": "📋 Preparar Reporte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Preparar Reporte": {
+      "main": [
+        [
+          {
+            "node": "¿Hay errores en el run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay errores en el run?": {
+      "main": [
+        [
+          {
+            "node": "📧 Alarma Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed"
+  },
+  "versionId": "54bc45a8-dc0b-48e7-917b-68c4235c8839",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "485509e9a5c8d71c1cb4cec8889f7732bcc322c60ae1381bc0e2122ee1eb1a4e"
+  },
+  "id": "hL3xsoVxKuLXrehx",
+  "tags": []
+}

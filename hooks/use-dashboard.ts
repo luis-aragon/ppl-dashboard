@@ -73,11 +73,8 @@ export function useSuppliers(filters: Filters, sortBy = 'total_leads', sortDir =
   })
 }
 
-export function useLeads(filters: Filters, sortBy = 'event_day', sortDir = 'desc', page = 1, extraSupplier?: string) {
-  const f = extraSupplier
-    ? { ...filters, suppliers: [extraSupplier] }
-    : filters
-  const key = qs(f, { sortBy, sortDir, page: String(page), pageSize: '50' })
+export function useLeads(filters: Filters, sortBy = 'event_day', sortDir = 'desc', page = 1) {
+  const key = qs(filters, { sortBy, sortDir, page: String(page), pageSize: '50' })
   return useQuery<LeadsData | null>({
     queryKey: ['leads', key],
     queryFn: () => apiFetch<LeadsData>(`/api/leads?${key}`),

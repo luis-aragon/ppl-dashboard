@@ -116,7 +116,7 @@ export function SupplierTable({ filters, showDrilldown = true }: Props) {
                     <td key={col.key} className={`px-3 py-2.5 whitespace-nowrap tabular-nums ${isName ? 'font-medium text-zinc-800' : 'text-zinc-600'}`}>
                       {isName && showDrilldown ? (
                         <a
-                          href={`/leads?supplier=${row.supplier_id}&dateFrom=${filters.dateFrom}&dateTo=${filters.dateTo}`}
+                          href={`/leads?suppliers=${row.supplier_id}&dateFrom=${filters.dateFrom}&dateTo=${filters.dateTo}`}
                           className="hover:text-emerald-600 hover:underline transition-colors"
                         >
                           {val}
