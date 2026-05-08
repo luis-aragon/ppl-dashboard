@@ -36,7 +36,7 @@
     },
     {
       "parameters": {
-        "url": "https://api.leadprosper.io/public/stats",
+        "url": "https://api.leadprosper.io/public/campaigns",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendQuery": true,
@@ -171,7 +171,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const allWatermarks = $('🕐 Leer Watermark').all();\nconst allCampaigns  = $('💾 Upsert lp_campaigns').all();\n\nreturn allCampaigns.map(c => {\n  const campaign = c.json;\n  const wm = allWatermarks.find(w => w.json.lp_campaign_id === campaign.lp_campaign_id)?.json || {};\n\n  return {\n    json: {\n      lp_campaign_id: campaign.lp_campaign_id,\n      name:           campaign.name     || wm.name,\n      vertical:       campaign.vertical || wm.vertical,\n      run_id:         campaign.run_id,\n      SUPABASE_URL:   campaign.SUPABASE_URL,\n      last_synced_at: wm.last_synced_at || null,\n      sync_from_date: wm.sync_from_date || null,\n    }\n  };\n});\n"
+        "jsCode": "const allWatermarks = $('🕐 Leer Watermark').all();\nconst allCampaigns  = $('💾 Upsert lp_campaigns').all();\nconst cfg           = $('⚙️ Config').first().json;\n\nreturn allCampaigns.map(c => {\n  const campaign = c.json;\n  const wm = allWatermarks.find(w => w.json.lp_campaign_id === campaign.lp_campaign_id)?.json || {};\n\n  return {\n    json: {\n      lp_campaign_id: campaign.lp_campaign_id,\n      name:           campaign.name     || wm.name,\n      vertical:       campaign.vertical || wm.vertical,\n      run_id:         cfg.run_id,\n      SUPABASE_URL:   cfg.SUPABASE_URL,\n      last_synced_at: wm.last_synced_at || null,\n      sync_from_date: wm.sync_from_date || null,\n    }\n  };\n});\n"
       },
       "id": "node-merge-campaign-watermark",
       "name": "🔗 Merge Campaña + Watermark",
@@ -185,7 +185,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst cfg   = $('⚙️ Config').first().json;\nconst overrideFrom = cfg.stats_date_from || null;\nconst overrideTo   = cfg.stats_date_to   || null;\n\nconst results = items.map(item => {\n  const data = item.json;\n  if (!data || typeof data !== 'object') {\n    return { json: { error: 'Datos de entrada inválidos', item: data } };\n  }\n\n  const now      = new Date();\n  const today    = now.toISOString().slice(0, 10);\n  const MAX_DAYS = 90;\n  const minDate  = new Date(now.getTime() - MAX_DAYS * 86400000).toISOString().slice(0, 10);\n\n  let dateFrom, dateTo;\n\n  if (overrideFrom && overrideTo) {\n    dateFrom = overrideFrom;\n    dateTo   = overrideTo;\n  } else {\n    const lastSync = data.last_synced_at || null;\n    const syncFrom = data.sync_from_date  || null;\n    if (lastSync) {\n      let d = new Date(lastSync);\n      d.setDate(d.getDate() - 1);\n      dateFrom = d.toISOString().slice(0, 10);\n    } else if (syncFrom) {\n      dateFrom = syncFrom;\n    } else {\n      dateFrom = minDate;\n    }\n    if (dateFrom < minDate) dateFrom = minDate;\n    dateTo = today;\n  }\n\n  return {\n    json: {\n      lp_campaign_id: data.lp_campaign_id,\n      name:           data.name     || 'Sin nombre',\n      vertical:       data.vertical || 'Sin vertical',\n      run_id:         data.run_id,\n      SUPABASE_URL:   data.SUPABASE_URL,\n      date_from:      dateFrom,\n      date_to:        dateTo,\n      debug_log:      `Fetch: ${dateFrom} -> ${dateTo}${overrideFrom ? ' (override)' : ''}`\n    }\n  };\n});\n\nreturn results;\n"
+        "jsCode": "const items = $input.all();\nconst cfg   = $('⚙️ Config').first().json;\n// override_date_from/to solo se setean para backfills manuales\n// stats_date_from/to son para el LP Stats API (Fetch Campañas) — no son override de watermark\nconst overrideFrom = cfg.override_date_from || null;\nconst overrideTo   = cfg.override_date_to   || null;\n\nconst results = items.map(item => {\n  const data = item.json;\n  if (!data || typeof data !== 'object') {\n    return { json: { error: 'Datos de entrada inválidos', item: data } };\n  }\n\n  const now      = new Date();\n  const today    = now.toISOString().slice(0, 10);\n  const MAX_DAYS = 90;\n  const minDate  = new Date(now.getTime() - MAX_DAYS * 86400000).toISOString().slice(0, 10);\n\n  let dateFrom, dateTo;\n\n  if (overrideFrom && overrideTo) {\n    dateFrom = overrideFrom;\n    dateTo   = overrideTo;\n  } else {\n    const lastSync = data.last_synced_at || null;\n    const syncFrom = data.sync_from_date  || null;\n    if (lastSync) {\n      let d = new Date(lastSync);\n      d.setDate(d.getDate() - 1);\n      dateFrom = d.toISOString().slice(0, 10);\n    } else if (syncFrom) {\n      dateFrom = syncFrom;\n    } else {\n      dateFrom = minDate;\n    }\n    if (dateFrom < minDate) dateFrom = minDate;\n    dateTo = today;\n  }\n\n  return {\n    json: {\n      lp_campaign_id: data.lp_campaign_id,\n      name:           data.name     || 'Sin nombre',\n      vertical:       data.vertical || 'Sin vertical',\n      run_id:         data.run_id,\n      SUPABASE_URL:   data.SUPABASE_URL,\n      date_from:      dateFrom,\n      date_to:        dateTo,\n      debug_log:      `Fetch: ${dateFrom} -> ${dateTo}${overrideFrom ? ' (override)' : ' (watermark)'}`\n    }\n  };\n});\n\nreturn results;\n"
       },
       "id": "node-calc-range",
       "name": "📅 Calcular Rango",
@@ -235,7 +235,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const logs = $input.all();\n\nreturn logs.map(item => {\n  const log = item.json;\n  const logData = Array.isArray(log) ? log[0] : log;\n  const campaignInfo = $('📅 Calcular Rango').all().find(c => c.json.lp_campaign_id === logData.lp_campaign_id)?.json || {};\n\n  return {\n    json: {\n      lp_campaign_id: logData.lp_campaign_id,\n      name:           campaignInfo.name     || 'Sin nombre',\n      vertical:       campaignInfo.vertical || 'Sin vertical',\n      run_id:         campaignInfo.run_id,\n      SUPABASE_URL:   campaignInfo.SUPABASE_URL,\n      date_from:      logData.date_from,\n      date_to:        logData.date_to,\n      sync_log_id:    logData.id,\n      search_after:   '',\n      total_fetched:  0,\n      total_inserted: 0\n    }\n  };\n});\n"
+        "jsCode": "const cfg  = $('⚙️ Config').first().json;\nconst logs = $input.all();\n\nreturn logs.map(item => {\n  const log = item.json;\n  const logData = Array.isArray(log) ? log[0] : log;\n  // String compare to avoid int vs string mismatch\n  const campaignInfo = $('📅 Calcular Rango').all().find(c => String(c.json.lp_campaign_id) === String(logData.lp_campaign_id))?.json || {};\n\n  return {\n    json: {\n      lp_campaign_id: String(logData.lp_campaign_id),\n      name:           campaignInfo.name     || 'Sin nombre',\n      vertical:       campaignInfo.vertical || 'Sin vertical',\n      run_id:         cfg.run_id,\n      SUPABASE_URL:   cfg.SUPABASE_URL,\n      date_from:      logData.date_from  || campaignInfo.date_from,\n      date_to:        logData.date_to    || campaignInfo.date_to,\n      sync_log_id:    logData.id,\n      search_after:   '',\n      total_fetched:  0,\n      total_inserted: 0\n    }\n  };\n});\n"
       },
       "id": "node-init-loop",
       "name": "🔄 Init Loop",
@@ -293,7 +293,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const state = $('🔄 Init Loop').item.json;\nconst httpResp = $input.item.json;\nlet leads = [];\nif (Array.isArray(httpResp)) {\n  leads = httpResp;\n} else if (httpResp.body && Array.isArray(httpResp.body)) {\n  if (httpResp.statusCode >= 400) throw new Error('LP API HTTP ' + httpResp.statusCode);\n  leads = httpResp.body;\n}\nconst loopState = $('🔁 Acumular Contadores').item ? $('🔁 Acumular Contadores').item.json : state;\nconst currentState = (loopState && loopState.sync_log_id) ? loopState : state;\n\nconst count = leads.length;\n\nconst nameLower = (currentState.name || '').toLowerCase();\nvar vertical = currentState.vertical || 'unknown';\nif (nameLower.includes('window'))    vertical = 'windows';\nelse if (nameLower.includes('roof')) vertical = 'roofing';\n\nconst rows = leads.map(function(lead) {\n  var leadDate = null;\n  if (lead.lead_date_ms) leadDate = new Date(parseInt(lead.lead_date_ms, 10)).toISOString();\n  var supplierId   = lead.supplier ? String(lead.supplier.id || '') : '';\n  var supplierName = lead.supplier ? (lead.supplier.name || '') : '';\n\n  const hashInput = JSON.stringify({ id: lead.id, status: lead.status, cost: lead.cost, revenue: lead.revenue });\n  let hash = 0;\n  for (let i = 0; i < hashInput.length; i++) { hash = ((hash << 5) - hash) + hashInput.charCodeAt(i); hash |= 0; }\n  const row_hash = Math.abs(hash).toString(16).padStart(8, '0');\n\n  return {\n    leadprosper_lead_id: lead.id,\n    row_hash,\n    source:              'leadprosper_api',\n    lp_campaign_id:      String(lead.campaign_id || currentState.lp_campaign_id),\n    campaign_name:       lead.campaign_name || currentState.name,\n    lead_created_at:     leadDate,\n    status:              lead.status,\n    lp_cost:             lead.cost    || 0,\n    lp_revenue:          lead.revenue || 0,\n    supplier_id_lp:      supplierId,\n    supplier_name:       supplierName,\n    vertical,\n    raw_payload:         lead,\n    buyers:              lead.buyers || [],\n    processed_to_facts:  false,\n    fetched_at:          new Date().toISOString(),\n  };\n});\n\nvar lastLead        = leads.length > 0 ? leads[leads.length - 1] : null;\nvar nextSearchAfter = (lastLead && count >= 100) ? lastLead.id : '';\nvar isDone          = count === 0 || count < 100 || !nextSearchAfter;\n\nconsole.log('Página ' + currentState.search_after + ': ' + count + ' leads. Done: ' + isDone);\n\nreturn [{ json: {\n  lp_campaign_id: currentState.lp_campaign_id,\n  name:           currentState.name,\n  vertical:       currentState.vertical,\n  run_id:         currentState.run_id,\n  SUPABASE_URL:   currentState.SUPABASE_URL,\n  date_from:      currentState.date_from,\n  date_to:        currentState.date_to,\n  sync_log_id:    currentState.sync_log_id,\n  search_after:   nextSearchAfter,\n  total_fetched:  currentState.total_fetched + count,\n  total_inserted: currentState.total_inserted,\n  leads_batch:    rows,\n  done:           isDone,\n} }];"
+        "jsCode": "// Read campaign state: on page 1 from Init Loop; on page 2+ from Acumular Contadores\nconst initState  = $('🔄 Init Loop').item.json;\nconst accumState = $('🔁 Acumular Contadores').item ? $('🔁 Acumular Contadores').item.json : null;\nconst currentState = (accumState && accumState.sync_log_id) ? accumState : initState;\n\n// Parse LP response — handles both {leads:[],search_after:''} and plain array\nconst httpResp = $input.item.json;\nif (httpResp.statusCode && httpResp.statusCode >= 400) {\n  throw new Error('LP API HTTP ' + httpResp.statusCode + ': ' + JSON.stringify(httpResp.body).slice(0, 200));\n}\nconst body = (httpResp.body !== undefined) ? httpResp.body : httpResp;\n\nlet leads = [];\nlet nextSearchAfter = '';\n\nif (Array.isArray(body)) {\n  // Flat array response (no search_after from body)\n  leads = body;\n  nextSearchAfter = '';\n} else if (body && typeof body === 'object') {\n  // Object response: { leads: [...], search_after: '...' }\n  // or { data: [...], search_after: '...' }\n  leads = body.leads || body.data || [];\n  nextSearchAfter = body.search_after || '';\n}\n\nconst count  = leads.length;\nconst isDone = !nextSearchAfter || count === 0;\n\nconsole.log('cursor=' + (currentState.search_after || 'first') + ' → ' + count + ' leads, next=' + (nextSearchAfter || 'done'));\n\nconst nameLower = (currentState.name || '').toLowerCase();\nvar vertical = currentState.vertical || 'unknown';\nif (nameLower.includes('window'))    vertical = 'windows';\nelse if (nameLower.includes('roof')) vertical = 'roofing';\n\nconst rows = leads.map(function(lead) {\n  var leadDate = null;\n  if (lead.lead_date_ms) leadDate = new Date(parseInt(lead.lead_date_ms, 10)).toISOString();\n  // supplier can be lead.supplier (object) or lead.suppliers (array)\n  var sup = lead.supplier || (Array.isArray(lead.suppliers) ? lead.suppliers[0] : null) || {};\n  var supplierId   = sup.id   ? String(sup.id)   : '';\n  var supplierName = sup.name ? String(sup.name)  : '';\n\n  const hashInput = JSON.stringify({ id: lead.id, status: lead.status, cost: lead.cost, revenue: lead.revenue });\n  let hash = 0;\n  for (let i = 0; i < hashInput.length; i++) { hash = ((hash << 5) - hash) + hashInput.charCodeAt(i); hash |= 0; }\n  const row_hash = Math.abs(hash).toString(16).padStart(8, '0');\n\n  return {\n    leadprosper_lead_id: lead.id,\n    row_hash,\n    source:              'leadprosper_api',\n    lp_campaign_id:      String(lead.campaign_id || currentState.lp_campaign_id),\n    campaign_name:       lead.campaign_name || currentState.name,\n    lead_created_at:     leadDate,\n    status:              lead.status,\n    lp_cost:             lead.cost    || 0,\n    lp_revenue:          lead.revenue || 0,\n    supplier_id_lp:      supplierId,\n    supplier_name:       supplierName,\n    vertical,\n    raw_payload:         lead,\n    buyers:              lead.buyers || [],\n    processed_to_facts:  false,\n    fetched_at:          new Date().toISOString(),\n  };\n});\n\nreturn [{ json: {\n  lp_campaign_id: currentState.lp_campaign_id,\n  name:           currentState.name,\n  vertical:       currentState.vertical,\n  run_id:         currentState.run_id,\n  SUPABASE_URL:   currentState.SUPABASE_URL,\n  date_from:      currentState.date_from,\n  date_to:        currentState.date_to,\n  sync_log_id:    currentState.sync_log_id,\n  search_after:   nextSearchAfter,\n  total_fetched:  currentState.total_fetched + count,\n  total_inserted: currentState.total_inserted,\n  leads_batch:    rows,\n  done:           isDone,\n} }];"
       },
       "id": "node-transform-leads",
       "name": "🔧 Transformar Leads",
@@ -583,30 +583,6 @@
         "supabaseApi": {
           "id": "bE5Kzpcay5MEET1t",
           "name": "RP Supabase"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "sendTo": "luis@rpsolutions.io",
-        "subject": "=❌ LP Ingesta ERROR — {{ $('❌ Error Handler').first().json.lp_campaign_id || 'unknown' }}",
-        "emailType": "text",
-        "message": "=Error en workflow LP API Ingesta.\n\nSync Log ID: {{ $('❌ Error Handler').first().json.sync_log_id || 'N/A' }}\nCampaña: {{ $('❌ Error Handler').first().json.lp_campaign_id || 'N/A' }}\nMensaje: {{ $('❌ Error Handler').first().json.error_message }}\n\nRevisar logs en n8n: https://n8n.rpworldllc.com",
-        "options": {}
-      },
-      "id": "node-alarm-email",
-      "name": "📧 Alarma Email",
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2,
-      "position": [
-        3296,
-        512
-      ],
-      "webhookId": "b45b7101-2dff-4030-ba65-1b8fb1f50dad",
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "u5q0VSnuIcwhjL8Z",
-          "name": "luis@rpsolutions"
         }
       }
     },
@@ -1056,7 +1032,7 @@
       "main": [
         [
           {
-            "node": "🔁 Loop Páginas",
+            "node": "📥 LP: Fetch Leads",
             "type": "main",
             "index": 0
           }
