@@ -7,6 +7,7 @@ import { KpiGauges } from './kpi-gauges'
 import { FinancialScorecards } from './financial-scorecards'
 import { TrendChart } from './trend-chart'
 import { SupplierTable } from './supplier-table'
+import { BuyerTable } from './buyer-table'
 import { GeoMap } from './geo-map'
 
 export function DashboardClient() {
@@ -31,6 +32,11 @@ export function DashboardClient() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <SupplierTable filters={filters} />
         <GeoMap data={geoData} isLoading={geoLoading} />
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide mb-3">Buyers</h2>
+        <BuyerTable filters={filters} />
       </div>
     </div>
   )

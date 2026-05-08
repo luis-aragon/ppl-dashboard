@@ -6,6 +6,8 @@ import type {
   FinancialData,
   TrendData,
   SuppliersData,
+  BuyersData,
+  LeadsData,
   GeoData,
   FilterOptions,
   ApiResponse,
@@ -68,6 +70,25 @@ export function useSuppliers(filters: Filters, sortBy = 'total_leads', sortDir =
   return useQuery<SuppliersData | null>({
     queryKey: ['suppliers', key],
     queryFn: () => apiFetch<SuppliersData>(`/api/suppliers?${key}`),
+  })
+}
+
+export function useLeads(filters: Filters, sortBy = 'event_day', sortDir = 'desc', page = 1, extraSupplier?: string) {
+  const f = extraSupplier
+    ? { ...filters, suppliers: [extraSupplier] }
+    : filters
+  const key = qs(f, { sortBy, sortDir, page: String(page), pageSize: '50' })
+  return useQuery<LeadsData | null>({
+    queryKey: ['leads', key],
+    queryFn: () => apiFetch<LeadsData>(`/api/leads?${key}`),
+  })
+}
+
+export function useBuyers(filters: Filters, sortBy = 'total_leads', sortDir = 'desc', page = 1) {
+  const key = qs(filters, { sortBy, sortDir, page: String(page), pageSize: '20' })
+  return useQuery<BuyersData | null>({
+    queryKey: ['buyers', key],
+    queryFn: () => apiFetch<BuyersData>(`/api/buyers?${key}`),
   })
 }
 

@@ -17,7 +17,15 @@ const FIPS: Record<string, string> = {
 interface Props { data: GeoData | null; isLoading: boolean }
 
 export function GeoMap({ data, isLoading }: Props) {
-  if (isLoading) return <div className="h-72 rounded-xl bg-zinc-100 animate-pulse" />
+  if (isLoading) return (
+    <div className="flex flex-col rounded-xl border border-zinc-100 bg-white px-5 py-4 shadow-sm animate-pulse">
+      <div className="mb-3 flex flex-col gap-1.5">
+        <div className="h-4 w-40 rounded bg-zinc-100" />
+        <div className="h-3 w-32 rounded bg-zinc-100" />
+      </div>
+      <div className="h-56 rounded-lg bg-zinc-100" />
+    </div>
+  )
 
   const byState  = Object.fromEntries((data ?? []).map((r) => [r.state, r]))
   const maxLeads = Math.max(1, ...(data ?? []).map((r) => r.total_leads ?? 0))

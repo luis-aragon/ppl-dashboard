@@ -29,9 +29,14 @@ interface Props { data: KpiData | null; isLoading: boolean }
 
 export function KpiGauges({ data, isLoading }: Props) {
   if (isLoading) return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 animate-pulse">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-28 rounded-xl bg-zinc-100" />
+        <div key={i} className="flex flex-col gap-2 rounded-xl border border-zinc-100 bg-white px-4 py-4 shadow-sm animate-pulse">
+          <div className="h-3 w-16 rounded bg-zinc-100" />
+          <div className="h-7 w-20 rounded bg-zinc-100" />
+          <div className="h-1 w-full rounded-full bg-zinc-100" />
+          <div className="h-3 w-10 rounded bg-zinc-100" />
+        </div>
       ))}
     </div>
   )

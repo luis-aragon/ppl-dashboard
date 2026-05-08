@@ -96,6 +96,50 @@ export interface FilterOptions {
   date_range: { min: string; max: string }
 }
 
+// --- Individual Leads Table (/api/leads) ---
+export interface LeadRow {
+  lead_id: string
+  event_day: string
+  supplier_name: string | null
+  buyer_name: string | null
+  status_bucket: string
+  status_raw: string | null
+  disposition: string | null
+  price: number
+  source: string
+}
+
+export interface LeadsData {
+  rows: LeadRow[]
+  total: number
+  page: number
+  page_size: number
+}
+
+// --- Buyer Ranking Table (/api/buyers) ---
+export interface BuyerRow {
+  buyer_id: string
+  buyer_name: string
+  total_leads: number
+  accepted: number
+  accepted_pct: number
+  rejected: number
+  duplicate: number
+  sold: number
+  revenue: number
+  cost: number
+  profit: number
+  profit_rate: number
+  cpa: number
+}
+
+export interface BuyersData {
+  rows: BuyerRow[]
+  total: number
+  page: number
+  page_size: number
+}
+
 // --- Generic API response wrapper ---
 export interface ApiResponse<T> {
   data: T | null
