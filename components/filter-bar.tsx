@@ -29,7 +29,7 @@ export function FilterBar({ filters, setFilters }: Props) {
     if (DATE_RE.test(val)) setFilters({ dateTo: val })
   }
 
-  const hasActive = filters.suppliers.length > 0 || filters.buyers.length > 0 || filters.verticals.length > 0
+  const hasActive = filters.suppliers.length > 0 || filters.buyers.length > 0
 
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
@@ -89,26 +89,6 @@ export function FilterBar({ filters, setFilters }: Props) {
           ))}
         </select>
       </div>
-
-      {/* Vertical */}
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-zinc-500">
-          Vertical{filters.verticals.length > 0 && ` (${filters.verticals.length})`}
-        </label>
-        <select
-          value={filters.verticals[0] ?? ''}
-          onChange={(e) => setFilters({ verticals: e.target.value ? [e.target.value] : [] })}
-          className={inputCls}
-        >
-          <option value="">Todos</option>
-          {(options?.verticals ?? []).map((v) => (
-            <option key={v} value={v}>{v}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Divider */}
-      <div className="h-8 w-px bg-zinc-200" />
 
       {/* Granularity */}
       <div className="flex flex-col gap-1">

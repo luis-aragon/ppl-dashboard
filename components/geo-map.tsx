@@ -23,12 +23,23 @@ export function GeoMap({ data, isLoading }: Props) {
         <div className="h-4 w-40 rounded bg-zinc-100" />
         <div className="h-3 w-32 rounded bg-zinc-100" />
       </div>
-      <div className="h-56 rounded-lg bg-zinc-100" />
+      <div className="h-48 rounded-lg bg-zinc-100" />
+      <div className="mt-3 space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex gap-2">
+            <div className="h-3 w-8 rounded bg-zinc-100" />
+            <div className="h-3 w-12 rounded bg-zinc-100" />
+            <div className="h-3 w-16 rounded bg-zinc-100" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 
+  const sorted   = [...(data ?? [])].sort((a, b) => (b.total_leads ?? 0) - (a.total_leads ?? 0))
   const byState  = Object.fromEntries((data ?? []).map((r) => [r.state, r]))
   const maxLeads = Math.max(1, ...(data ?? []).map((r) => r.total_leads ?? 0))
+  const topStates = sorted.slice(0, 7)
 
   function fill(abbr: string) {
     const row = byState[abbr]
@@ -41,44 +52,81 @@ export function GeoMap({ data, isLoading }: Props) {
   return (
     <div className="flex flex-col rounded-xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
       <div className="mb-3">
-        <h2 className="text-sm font-semibold text-zinc-700">Distribución Geográfica</h2>
-        <p className="text-xs text-zinc-400 mt-0.5">Leads por estado (EE.UU.)</p>
+        <h2 className="text-sm font-semibold text-zinc-700">Geographic Distribution</h2>
+        <p className="text-xs text-zinc-400 mt-0.5">Leads by state · top markets</p>
       </div>
+
       {(!data || data.length === 0) ? (
-        <div className="flex flex-1 items-center justify-center py-16 text-sm text-zinc-400">
-          Sin datos geográficos
+        <div className="flex flex-1 items-center justify-center py-12 text-sm text-zinc-400">
+          No geographic data
         </div>
       ) : (
-        <ComposableMap projection="geoAlbersUsa" className="w-full max-h-64">
-          <Geographies geography={GEO_URL}>
-            {({ geographies }) =>
-              geographies.map((geo) => {
-                const abbr = FIPS[geo.id as string] ?? ''
-                const row  = byState[abbr]
-                return (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    fill={fill(abbr)}
-                    stroke="#ffffff"
-                    strokeWidth={0.5}
-                    style={{
-                      default: { outline: 'none' },
-                      hover:   { outline: 'none', fill: '#fbbf24', cursor: 'pointer' },
-                      pressed: { outline: 'none' },
-                    }}
-                    data-tooltip-id="geo-tip"
-                    data-tooltip-content={
-                      row
-                        ? `${abbr}: ${row.total_leads ?? 0} leads, $${(row.revenue ?? 0).toLocaleString()}`
-                        : abbr
-                    }
-                  />
-                )
-              })
-            }
-          </Geographies>
-        </ComposableMap>
+        <>
+          <ComposableMap projection="geoAlbersUsa" className="w-full max-h-52">
+            <Geographies geography={GEO_URL}>
+              {({ geographies }) =>
+                geographies.map((geo) => {
+                  const abbr = FIPS[geo.id as string] ?? ''
+                  const row  = byState[abbr]
+                  return (
+                    <Geography
+                      key={geo.rsmKey}
+                      geography={geo}
+                      fill={fill(abbr)}
+                      stroke="#ffffff"
+                      strokeWidth={0.5}
+                      style={{
+                        default: { outline: 'none' },
+                        hover:   { outline: 'none', fill: '#fbbf24', cursor: 'pointer' },
+                        pressed: { outline: 'none' },
+                      }}
+                      data-tooltip-id="geo-tip"
+                      data-tooltip-content={
+                        row
+                          ? `${abbr}: ${row.total_leads ?? 0} leads, $${(row.revenue ?? 0).toLocaleString()}`
+                          : abbr
+                      }
+                    />
+                  )
+                })
+              }
+            </Geographies>
+          </ComposableMap>
+
+          {/* Top states table */}
+          <div className="mt-3 border-t border-zinc-100 pt-3">
+            <table className="w-full text-xs">
+              <thead>
+                <tr>
+                  {['State', 'Leads', 'Revenue', 'Rate'].map((h) => (
+                    <th key={h} className="pb-1.5 text-left font-medium uppercase tracking-wide text-zinc-400">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {topStates.map((g) => {
+                  const rate    = g.revenue ? ((g.revenue ?? 0) / Math.max(g.total_leads ?? 1, 1)) : 0
+                  const barW    = maxLeads ? ((g.total_leads ?? 0) / maxLeads) * 100 : 0
+                  return (
+                    <tr key={g.state} className="border-t border-zinc-50">
+                      <td className="py-1.5 font-semibold text-zinc-700 w-10">{g.state}</td>
+                      <td className="py-1.5 text-zinc-500">
+                        <div className="flex flex-col gap-0.5">
+                          <span>{(g.total_leads ?? 0).toLocaleString()}</span>
+                          <div className="h-1 w-16 overflow-hidden rounded-full bg-zinc-100">
+                            <div className="h-full rounded-full bg-[#378ADD]" style={{ width: `${barW}%` }} />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-1.5 text-zinc-600 font-medium">${(g.revenue ?? 0).toLocaleString()}</td>
+                      <td className="py-1.5 text-zinc-400">${rate.toFixed(0)}/lead</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   )
