@@ -83,7 +83,7 @@ export function UsersAdmin({ partners }: Props) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return
+    if (!confirm('Delete this user? This action cannot be undone.')) return
     setDeleteId(id)
     const res  = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
     const json = await res.json()
@@ -104,14 +104,14 @@ export function UsersAdmin({ partners }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-zinc-400">
-            {loading ? 'Cargando…' : `${users.length} usuario${users.length !== 1 ? 's' : ''}`}
+            {loading ? 'Loading…' : `${users.length} user${users.length !== 1 ? 's' : ''}`}
           </p>
         </div>
         <button
           onClick={openCreate}
           className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
         >
-          + Nuevo usuario
+          + New User
         </button>
       </div>
 
@@ -121,7 +121,7 @@ export function UsersAdmin({ partners }: Props) {
           <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-base font-semibold text-white">
-                {editUser ? 'Editar usuario' : 'Nuevo usuario'}
+                {editUser ? 'Edit User' : 'New User'}
               </h2>
               <button
                 onClick={() => setShowForm(false)}
@@ -139,17 +139,17 @@ export function UsersAdmin({ partners }: Props) {
                     className={inputCls} placeholder="usuario@empresa.com" />
                 </Field>
               )}
-              <Field label={editUser ? 'Nueva contraseña (vacío = sin cambios)' : 'Contraseña'}>
+              <Field label={editUser ? 'New password (leave blank to keep current)' : 'Password'}>
                 <input type="password" required={!editUser} value={form.password}
                   onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                   className={inputCls} />
               </Field>
-              <Field label="Nombre">
+              <Field label="Display Name">
                 <input type="text" required value={form.display_name}
                   onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
                   className={inputCls} placeholder="Nombre Apellido" />
               </Field>
-              <Field label="Rol">
+              <Field label="Role">
                 <select value={form.role}
                   onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as 'admin' | 'supplier' }))}
                   className={inputCls}>
@@ -158,11 +158,11 @@ export function UsersAdmin({ partners }: Props) {
                 </select>
               </Field>
               {form.role === 'supplier' && (
-                <Field label="Supplier vinculado">
+                <Field label="Linked Supplier">
                   <select value={form.partner_id}
                     onChange={(e) => setForm((f) => ({ ...f, partner_id: e.target.value }))}
                     className={inputCls}>
-                    <option value="">— Seleccionar —</option>
+                    <option value="">— Select —</option>
                     {partners.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
@@ -175,14 +175,14 @@ export function UsersAdmin({ partners }: Props) {
                   disabled={saving}
                   className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
                 >
-                  {saving ? 'Guardando…' : 'Guardar'}
+                  {saving ? 'Saving…' : 'Save'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
                   className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 py-2.5 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
                 >
-                  Cancelar
+                  Cancel
                 </button>
               </div>
             </form>
@@ -195,18 +195,18 @@ export function UsersAdmin({ partners }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-zinc-800">
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">Nombre</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">Rol</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">Name</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">Role</th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">Supplier</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">Creado</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">Created</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className="px-4 py-10 text-center text-zinc-600">Cargando…</td></tr>
+              <tr><td colSpan={5} className="px-4 py-10 text-center text-zinc-600">Loading…</td></tr>
             ) : users.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-10 text-center text-zinc-600">Sin usuarios</td></tr>
+              <tr><td colSpan={5} className="px-4 py-10 text-center text-zinc-600">No users found</td></tr>
             ) : users.map((u) => (
               <tr key={u.id} className="border-b border-zinc-800/50 transition-colors hover:bg-zinc-800/30">
                 <td className="px-4 py-3 font-medium text-zinc-100">{u.display_name}</td>
@@ -221,7 +221,7 @@ export function UsersAdmin({ partners }: Props) {
                 </td>
                 <td className="px-4 py-3 text-zinc-400">{u.partners?.name ?? '—'}</td>
                 <td className="px-4 py-3 text-zinc-500">
-                  {new Date(u.created_at).toLocaleDateString('es-AR')}
+                  {new Date(u.created_at).toLocaleDateString('en-US')}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-2">
@@ -229,14 +229,14 @@ export function UsersAdmin({ partners }: Props) {
                       onClick={() => openEdit(u)}
                       className="rounded-md border border-zinc-700 px-2.5 py-1 text-xs text-zinc-400 transition-colors hover:border-zinc-500 hover:text-white"
                     >
-                      Editar
+                      Edit
                     </button>
                     <button
                       onClick={() => handleDelete(u.id)}
                       disabled={deleteId === u.id}
                       className="rounded-md border border-red-900/60 px-2.5 py-1 text-xs text-red-400 transition-colors hover:border-red-700 hover:text-red-300 disabled:opacity-50"
                     >
-                      {deleteId === u.id ? '…' : 'Eliminar'}
+                      {deleteId === u.id ? '…' : 'Delete'}
                     </button>
                   </div>
                 </td>

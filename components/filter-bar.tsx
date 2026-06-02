@@ -35,7 +35,7 @@ export function FilterBar({ filters, setFilters }: Props) {
     <div className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
       {/* Date range */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-zinc-500">Desde</label>
+        <label className="text-xs font-medium text-zinc-500">From</label>
         <input
           type="date"
           value={localFrom}
@@ -45,7 +45,7 @@ export function FilterBar({ filters, setFilters }: Props) {
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-zinc-500">Hasta</label>
+        <label className="text-xs font-medium text-zinc-500">To</label>
         <input
           type="date"
           value={localTo}
@@ -66,7 +66,7 @@ export function FilterBar({ filters, setFilters }: Props) {
           onChange={(e) => setFilters({ buyers: e.target.value ? [e.target.value] : [] })}
           className={inputCls}
         >
-          <option value="">Todos</option>
+          <option value="">All</option>
           {(options?.buyers ?? []).map((b) => (
             <option key={b.id} value={b.id}>{b.name}</option>
           ))}
@@ -83,7 +83,7 @@ export function FilterBar({ filters, setFilters }: Props) {
           onChange={(e) => setFilters({ suppliers: e.target.value ? [e.target.value] : [] })}
           className={inputCls}
         >
-          <option value="">Todos</option>
+          <option value="">All</option>
           {(options?.suppliers ?? []).map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
@@ -92,7 +92,7 @@ export function FilterBar({ filters, setFilters }: Props) {
 
       {/* Granularity */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-zinc-500">Agrupación</label>
+        <label className="text-xs font-medium text-zinc-500">Group By</label>
         <div className="flex h-8 overflow-hidden rounded-md border border-zinc-200 bg-white text-sm">
           {(['day', 'week', 'month'] as const).map((g) => (
             <button
@@ -104,7 +104,7 @@ export function FilterBar({ filters, setFilters }: Props) {
                   : 'text-zinc-600 hover:bg-zinc-50'
               }`}
             >
-              {g === 'day' ? 'Día' : g === 'week' ? 'Sem' : 'Mes'}
+              {g === 'day' ? 'Day' : g === 'week' ? 'Week' : 'Month'}
             </button>
           ))}
         </div>
@@ -116,7 +116,7 @@ export function FilterBar({ filters, setFilters }: Props) {
           onClick={() => setFilters({ suppliers: [], buyers: [], verticals: [] })}
           className="ml-auto h-8 rounded-md px-3 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
         >
-          Limpiar filtros
+          Clear filters
         </button>
       )}
     </div>

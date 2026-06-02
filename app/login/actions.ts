@@ -17,7 +17,7 @@ export async function login(formData: FormData) {
   console.log('[login] email:', data.email, '| error:', error?.message ?? 'none', '| session:', !!authData?.session)
 
   if (error) {
-    redirect('/login?error=Credenciales incorrectas')
+    redirect('/login?error=Invalid credentials')
   }
 
   revalidatePath('/', 'layout')

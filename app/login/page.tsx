@@ -20,7 +20,7 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
           />
           <div className="text-center">
             <h1 className="text-xl font-semibold tracking-tight text-white">PPL Dashboard</h1>
-            <p className="mt-1 text-sm text-zinc-500">Inicia sesión para continuar</p>
+            <p className="mt-1 text-sm text-zinc-500">Sign in to continue</p>
           </div>
         </div>
 
@@ -34,7 +34,7 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
 
             <div className="space-y-1.5">
               <label htmlFor="email" className="block text-xs font-medium text-zinc-400">
-                Correo Electrónico
+                Email
               </label>
               <div suppressHydrationWarning>
                 <input
@@ -50,7 +50,7 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
 
             <div className="space-y-1.5">
               <label htmlFor="password" className="block text-xs font-medium text-zinc-400">
-                Contraseña
+                Password
               </label>
               <div suppressHydrationWarning>
                 <input
@@ -68,7 +68,7 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
               type="submit"
               className="mt-2 flex w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
             >
-              Ingresar
+              Sign In
             </button>
           </form>
         </div>

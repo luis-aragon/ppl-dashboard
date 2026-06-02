@@ -36,7 +36,7 @@ export default async function AdminPage() {
             <span className="text-zinc-700">|</span>
             <div className="flex items-center gap-2.5">
               <Image src="/rp-logo.png" alt="RP Solutions" width={24} height={24} className="h-6 w-auto" />
-              <h1 className="text-sm font-semibold tracking-tight">Gestión de Usuarios</h1>
+              <h1 className="text-sm font-semibold tracking-tight">User Management</h1>
             </div>
           </div>
           <div className="flex items-center gap-3">

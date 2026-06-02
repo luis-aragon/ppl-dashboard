@@ -28,12 +28,12 @@ export function LeadsTable({ filters }: Props) {
   }
 
   const cols = [
-    { key: 'event_day',     label: 'Fecha' },
+    { key: 'event_day',     label: 'Date' },
     { key: 'lead_id',       label: 'Lead ID' },
     { key: 'supplier_name', label: 'Supplier' },
     { key: 'buyer_name',    label: 'Buyer' },
     { key: 'status_bucket', label: 'Status LP' },
-    { key: 'disposition',   label: 'Disposición' },
+    { key: 'disposition',   label: 'Disposition' },
     { key: 'price',         label: 'Revenue' },
   ] as const
 
@@ -75,7 +75,7 @@ export function LeadsTable({ filters }: Props) {
   return (
     <div className="flex flex-col rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-100">
-        <h2 className="text-sm font-semibold text-zinc-700">Leads individuales</h2>
+        <h2 className="text-sm font-semibold text-zinc-700">Individual Leads</h2>
         <span className="text-xs text-zinc-400">{total.toLocaleString()} leads</span>
       </div>
       <div className="overflow-x-auto">
@@ -127,7 +127,7 @@ export function LeadsTable({ filters }: Props) {
             {rows.length === 0 && (
               <tr>
                 <td colSpan={cols.length} className="px-3 py-12 text-center text-zinc-400 text-sm">
-                  Sin leads en el período seleccionado
+                  No leads in the selected period
                 </td>
               </tr>
             )}
@@ -136,14 +136,14 @@ export function LeadsTable({ filters }: Props) {
       </div>
       {pageCount > 1 && (
         <div className="flex items-center justify-between border-t border-zinc-100 px-4 py-2.5 text-xs text-zinc-500">
-          <span>Página {page} de {pageCount}</span>
+          <span>Page {page} of {pageCount}</span>
           <div className="flex items-center gap-1">
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
               className="rounded px-2.5 py-1 transition-colors hover:bg-zinc-100 disabled:opacity-40"
             >
-              Ant
+              Prev
             </button>
             <span className="px-1">{page} / {pageCount}</span>
             <button
@@ -151,7 +151,7 @@ export function LeadsTable({ filters }: Props) {
               onClick={() => setPage((p) => p + 1)}
               className="rounded px-2.5 py-1 transition-colors hover:bg-zinc-100 disabled:opacity-40"
             >
-              Sig
+              Next
             </button>
           </div>
         </div>
