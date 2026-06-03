@@ -34,7 +34,7 @@ export default async function Home() {
             </span>
             {p?.role === 'admin' && (
               <a href="/admin" className="text-sm text-zinc-500 transition-colors hover:text-zinc-900">
-                Usuarios
+                Users
               </a>
             )}
             <LogoutButton />

@@ -136,7 +136,7 @@ export function UsersAdmin({ partners }: Props) {
                 <Field label="Email">
                   <input type="email" required value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    className={inputCls} placeholder="usuario@empresa.com" />
+                    className={inputCls} placeholder="user@company.com" />
                 </Field>
               )}
               <Field label={editUser ? 'New password (leave blank to keep current)' : 'Password'}>
@@ -147,7 +147,7 @@ export function UsersAdmin({ partners }: Props) {
               <Field label="Display Name">
                 <input type="text" required value={form.display_name}
                   onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
-                  className={inputCls} placeholder="Nombre Apellido" />
+                  className={inputCls} placeholder="First Last" />
               </Field>
               <Field label="Role">
                 <select value={form.role}

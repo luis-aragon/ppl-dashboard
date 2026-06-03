@@ -25,15 +25,15 @@ export function TrendChart({ data, isLoading }: Props) {
 
   if (!data || data.length === 0) return (
     <div className="flex h-72 items-center justify-center rounded-xl border border-zinc-200 bg-white text-sm text-zinc-400">
-      Sin datos de tendencia
+      No trend data available
     </div>
   )
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
       <div className="mb-4">
-        <h2 className="text-sm font-semibold text-zinc-700">Volumen y Revenue</h2>
-        <p className="text-xs text-zinc-400 mt-0.5">Leads aceptados, rechazados y duplicados vs. ingresos</p>
+        <h2 className="text-sm font-semibold text-zinc-700">Volume & Revenue</h2>
+        <p className="text-xs text-zinc-400 mt-0.5">Accepted, rejected, and duplicate leads vs. revenue</p>
       </div>
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
