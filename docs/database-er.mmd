@@ -1,0 +1,97 @@
+erDiagram
+  LP_CAMPAIGNS ||--o{ LP_SYNC_LOG : "lp_campaign_id"
+  LP_LEADS_RAW ||--o{ LEAD_EVENTS : "leadprosper_lead_id"
+  LEAD_IDENTITY ||--o{ LEAD_EVENTS : "lead_key"
+  PARTNERS ||--o{ DASHBOARD_USERS : "partner_id"
+  PARTNERS ||--o{ USER_PARTNERS : "partner_id"
+  PARTNERS ||--o{ PARTNER_LP : "partner_id"
+
+  LP_CAMPAIGNS {
+    bigint lp_campaign_id PK
+    text campaign_name
+    text vertical
+    text status
+    timestamptz last_synced_at
+    date sync_from_date
+  }
+
+  LP_LEADS_RAW {
+    text leadprosper_lead_id PK
+    bigint id
+    bigint campaign_id
+    text campaign_name
+    varchar buyer_name
+    numeric lp_cost
+    numeric buyer_sell_price
+    numeric profit
+    timestamptz lead_created_at
+    jsonb raw_payload
+  }
+
+  LEAD_IDENTITY {
+    bigint lead_key PK
+    text lead_id
+    text norm_phone
+    text norm_email
+  }
+
+  LEAD_EVENTS {
+    bigint id PK
+    text lead_id
+    bigint lead_key FK
+    text leadprosper_lead_id FK
+    text event_type
+    text supplier
+    text buyer
+    date event_day
+    text status_bucket
+    numeric price
+  }
+
+  LEAD_FACTS {
+    text lead_id PK
+    date event_day
+    text supplier
+    varchar buyer
+    uuid supplier_id
+    uuid buyer_id
+    text status_bucket
+    text disposition
+    numeric price
+  }
+
+  PARTNERS {
+    uuid id PK
+    text name
+    text partner_type
+    text status
+  }
+
+  DASHBOARD_USERS {
+    uuid id PK
+    text display_name
+    text role
+    uuid partner_id FK
+  }
+
+  USER_PARTNERS {
+    uuid user_id PK
+    uuid partner_id PK
+    text role
+  }
+
+  PARTNER_LP {
+    uuid id PK
+    uuid partner_id FK
+    text lp_id
+    text lp_type
+  }
+
+  LP_SYNC_LOG {
+    bigint id PK
+    text run_id
+    bigint lp_campaign_id FK
+    text status
+    integer leads_fetched
+    integer leads_inserted
+  }

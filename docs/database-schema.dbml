@@ -1,0 +1,321 @@
+Project ppl_dashboard {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Esquema public exportado para dbdiagram.io.
+    Las referencias declaradas como Ref son claves foraneas explicitas detectadas por Supabase/PostgREST.
+    Las relaciones inferidas se dejan como notas para no confundirlas con constraints reales.
+  '''
+}
+
+Table partners {
+  id uuid [pk]
+  name text [not null]
+  partner_type text [not null, note: 'Ej: supplier, buyer']
+  status text [not null]
+  report_email text
+  notes text
+  created_at timestamptz [not null]
+
+  Note: 'Catalogo de partners internos.'
+}
+
+Table dashboard_users {
+  id uuid [pk, note: 'Probable auth.users.id']
+  display_name text [not null]
+  role text [not null, note: 'La app usa admin y supplier']
+  partner_id uuid
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Note: 'Perfil de usuario del dashboard.'
+}
+
+Table user_partners {
+  user_id uuid [pk, note: 'Probable auth.users.id']
+  partner_id uuid [pk]
+  role text
+  created_at timestamptz
+
+  Note: 'Relacion usuario-partner many-to-many.'
+}
+
+Table partner_lp {
+  id uuid [pk]
+  partner_id uuid
+  lp_id text [not null]
+  lp_type text
+  created_at timestamptz
+
+  Note: 'Mapping entre partners internos e IDs externos de LeadProsper.'
+}
+
+Table lp_campaigns {
+  lp_campaign_id bigint [pk]
+  campaign_name text [not null]
+  vertical text [note: 'Vertical derivada del nombre de campana: windows, roofing, etc.']
+  status text [not null]
+  last_synced_at timestamptz [note: 'Ultima fecha sincronizada']
+  sync_from_date date [note: 'Fecha minima historica para primer sync']
+  created_at timestamptz
+  updated_at timestamptz
+
+  Note: 'Catalogo de campanas de LeadProsper y watermark de ingesta.'
+}
+
+Table lp_sync_log {
+  id bigint [pk]
+  run_id text [note: 'UUID compartido entre registros de un mismo run']
+  lp_campaign_id bigint
+  started_at timestamptz
+  finished_at timestamptz
+  status text [not null]
+  leads_fetched integer [not null]
+  leads_inserted integer [not null]
+  leads_skipped integer [not null, note: 'Leads ignorados por conflicto/upsert']
+  date_from date
+  date_to date
+  error_message text
+  created_at timestamptz
+
+  Note: 'Log de ejecuciones del workflow de ingesta desde LP API.'
+}
+
+Table lp_leads_raw {
+  leadprosper_lead_id text [pk]
+  id bigint [not null]
+  first_name varchar
+  last_name varchar
+  email varchar
+  phone varchar
+  address text
+  city varchar
+  state varchar
+  zip_code varchar
+  campaign_id bigint [note: 'Relacion logica probable con lp_campaigns.lp_campaign_id']
+  campaign_name text
+  supplier_campaign_name text
+  buyer_name varchar
+  buyer_campaign_name varchar
+  buyer_status varchar
+  lp_cost numeric
+  buyer_sell_price numeric
+  profit numeric
+  lead_created_at timestamptz
+  fetched_at timestamptz
+  source text
+  raw_payload jsonb
+  status_final varchar
+  buyer_callback_date timestamptz
+  test boolean
+
+  Note: 'Leads crudos/importados desde LeadProsper.'
+}
+
+Table lead_identity {
+  lead_key bigint [pk]
+  lead_id text
+  norm_phone text
+  norm_email text
+  created_at timestamptz [not null]
+
+  Note: 'Identidad normalizada para deduplicacion/tracking.'
+}
+
+Table lead_events {
+  id bigint [pk]
+  vertical text
+  event_type text [not null]
+  source_system text [not null]
+  buyer text
+  supplier text
+  lead_id text
+  norm_phone text
+  norm_email text
+  lead_key bigint
+  event_ts timestamptz
+  imported_at timestamptz [not null]
+  event_day date
+  event_month date
+  status_bucket text
+  status_raw text
+  error_message text
+  price numeric
+  payload jsonb
+  leadprosper_lead_id text
+
+  Note: 'Eventos de leads normalizados.'
+}
+
+Table lead_facts {
+  lead_id text [pk]
+  event_day date
+  supplier text
+  buyer varchar
+  supplier_id uuid [note: 'Relacion logica probable con partners.id']
+  buyer_id uuid [note: 'Relacion logica probable con partners.id']
+  status_bucket text
+  status_raw varchar
+  disposition text
+  price numeric
+  source text
+
+  Note: 'Hechos limpios consumidos por dashboard/reportes.'
+}
+
+Table disposition_map {
+  id integer [pk]
+  buyer_name text [not null]
+  raw_value text [not null]
+  disposition text [not null]
+  sold boolean [not null]
+  appointment_set boolean [not null]
+  returned boolean [not null]
+
+  Note: 'Mapeo de valores crudos de buyer hacia disposiciones operativas.'
+}
+
+Table buyer_reports {
+  id bigint [pk]
+  upload_id bigint
+  lead_id text
+  buyer_name text
+  appointment_issued smallint
+  appointment_set smallint
+  appointment_ids text
+  gross_amount numeric
+  net_amount numeric
+  created_at timestamptz
+  imported_at timestamptz
+  raw_payload jsonb
+  email text
+  product text
+  phone text
+  date timestamptz
+  reason text
+
+  Note: 'Reportes cargados por buyer.'
+}
+
+Table vertical_classification_rules {
+  id integer [pk]
+  vertical varchar [not null]
+  pattern text [not null]
+
+  Note: 'Reglas para clasificar verticales.'
+}
+
+// Views exposed by Supabase/PostgREST. Marked as tables so dbdiagram can display them.
+Table v_leads_summary {
+  total_leads bigint
+  leads_accepted bigint
+  leads_rejected bigint
+  acceptance_pct numeric
+  unique_buyers bigint
+  unique_campaigns bigint
+  total_revenue numeric
+  total_cost numeric
+  total_profit numeric
+  roi_pct numeric
+
+  Note: 'VIEW: Totales generales de leads y finanzas.'
+}
+
+Table v_leads_by_buyer {
+  buyer_name varchar
+  total_leads bigint
+  accepted bigint
+  acceptance_pct numeric
+  revenue numeric
+  cost numeric
+  profit numeric
+  roi_pct numeric
+
+  Note: 'VIEW: Ranking agregado por buyer.'
+}
+
+Table v_leads_by_state {
+  state varchar
+  city varchar
+  leads bigint
+  accepted bigint
+  acceptance_pct numeric
+  profit numeric
+
+  Note: 'VIEW: Leads por estado/ciudad.'
+}
+
+Table v_leads_hourly {
+  hour timestamptz
+  leads_incoming bigint
+  leads_accepted bigint
+  acceptance_pct numeric
+  revenue_hour numeric
+  cost_hour numeric
+  profit_hour numeric
+
+  Note: 'VIEW: Performance por hora.'
+}
+
+Table v_metrics_monthly_buyer {
+  event_month text
+  buyer text
+  accepted bigint
+  duplicates bigint
+  errors bigint
+  rejected bigint
+  other bigint
+  total bigint
+  revenue numeric
+
+  Note: 'VIEW: Metricas mensuales por buyer.'
+}
+
+Table vw_metrics_by_vertical {
+  event_month date
+  buyer text
+  supplier text
+  vertical text
+  total bigint
+  accepted bigint
+  rejected bigint
+  duplicates bigint
+  errors bigint
+  acceptance_rate numeric
+
+  Note: 'VIEW: Metricas por mes, buyer, supplier y vertical.'
+}
+
+Table vw_internal_lead_report {
+  lead_id text [pk]
+  lead_date date
+  state varchar
+  city varchar
+  supplier_id text
+  supplier text
+  buyer_id text
+  buyer varchar
+  vertical text
+  status_bucket text
+  status_raw varchar
+  revenue numeric
+  cost numeric
+  sold boolean
+  appointment_set boolean
+
+  Note: 'VIEW: Reporte interno por lead.'
+}
+
+// Foreign keys explicitas detectadas por OpenAPI.
+Ref: lp_sync_log.lp_campaign_id > lp_campaigns.lp_campaign_id
+Ref: dashboard_users.partner_id > partners.id
+Ref: user_partners.partner_id > partners.id
+Ref: partner_lp.partner_id > partners.id
+Ref: lead_events.lead_key > lead_identity.lead_key
+Ref: lead_events.leadprosper_lead_id > lp_leads_raw.leadprosper_lead_id
+
+// Relaciones inferidas por uso de app/RPC, no declaradas como FK en OpenAPI:
+// Ref probable: lead_facts.supplier_id > partners.id
+// Ref probable: lead_facts.buyer_id > partners.id
+// Ref probable: lp_leads_raw.campaign_id > lp_campaigns.lp_campaign_id
+// Ref probable: dashboard_users.id > auth.users.id
+// Ref probable: user_partners.user_id > auth.users.id
